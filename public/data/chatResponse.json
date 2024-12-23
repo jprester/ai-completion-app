@@ -1,0 +1,22 @@
+{
+  "id": "3c9878b5d1644e9d91e512d28b90f162",
+  "object": "chat.completion",
+  "created": 1734957353,
+  "model": "mock-response",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "tool_calls": null,
+        "content": "Mock response: The best French cheese is Camembert."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 11,
+    "total_tokens": 87,
+    "completion_tokens": 76
+  }
+}
