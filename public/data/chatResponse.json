@@ -9,7 +9,7 @@
       "message": {
         "role": "assistant",
         "tool_calls": null,
-        "content": "Mock response: The best French cheese is Camembert."
+        "content": "Mock response: The best French cheese is Camembert This code adds a checkbox to toggle between using the mock response and the actual API response. When the checkbox is checked, the application will fetch the mock response from the local JSON file located at."
       },
       "finish_reason": "stop"
     }

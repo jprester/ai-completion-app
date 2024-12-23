@@ -1,27 +1,49 @@
+body {
+    background-color: #242424;
+}
+
 .App {
-    padding: 10px 20px;
+    padding: 10px 0px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+
+.chat-input-section {
+    bottom: 0px;
+    position: fixed;
+    height: 100px;
+    opacity: 0.85;
+    width: 100%;
+    margin: auto;
+    background-color: #111;
+    border-radius: 12px;
 }
 
 .input-container {
     display: flex;
     justify-content: center;
-    margin-bottom: 20px;
+    padding-top: 25px;
+    max-width: 960px;
+    margin: auto;
 }
 
 .input-container input.chat-input {
-    width: 100%;
+    width: 80%;
     padding: 10px;
     font-size: 16px;
     border: 1px solid #ccc;
     border-radius: 5px;
+    margin-right: 10px;
+
 }
 
 .button-container {
     display: flex;
     justify-content: right;
+    margin-top: 10px;
 }
-
-.button-container .button {
+.button {
     padding: 10px 20px;
     font-size: 16px;
     background-color: #007bff;
@@ -36,4 +58,33 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    margin-top: 20px;
+    overflow-y: auto;
+}
+
+.messages {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 960px;
+    padding: 0px 30px;
+    margin-bottom: 100px;
+}
+
+.message {
+    max-width: 100%;
+    padding: 10px;
+    margin: 15px 0;
+    border-radius: 10px;
+}
+
+.user-message {
+    align-self: flex-end;
+    background-color: #444;
+    max-width: 50%;
+}
+
+.assistant-message {
+    align-self: flex-start;
+    text-align: left;
 }
