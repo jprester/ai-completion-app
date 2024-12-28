@@ -9,28 +9,20 @@ body {
 }
 
 
-.chat-input-section {
-    bottom: 0px;
-    position: fixed;
-    height: 120px;
-    opacity: 0.85;
-    width: 100%;
-    margin: auto;
-}
-
 .input-container {
     display: flex;
     justify-content: center;
-    padding-top: 10px;
-    max-width: 960px;
-    margin: auto;
     position: relative;
-    bottom: 20px;
+    bottom: 0px;
+    position: fixed;
+    width: 100%;
 }
 
 .chat-container {
-    width: 80%;
+    width: 960px;
     position: relative;
+    margin: 0 auto;
+    padding: 0px 30px;
 }
 
 .input-container .chat-input {
@@ -69,7 +61,7 @@ body {
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;;
     bottom: 8px;
     opacity: 0.8;
-    right: 10px;
+    right: 40px;
     bottom: 15px;
 
     svg {
@@ -125,6 +117,7 @@ body {
     align-self: flex-end;
     background-color: #444;
     max-width: 50%;
+    text-align: left;
 }
 
 .assistant-message {
