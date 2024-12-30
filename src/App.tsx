@@ -4,13 +4,37 @@ import { Mistral } from "@mistralai/mistralai";
 import ArrowUp from "./assets/icons/ArrowUp";
 
 import "./App.css";
+import {
+  AssistantMessage,
+  SystemMessage,
+  ToolMessage,
+  UserMessage,
+} from "@mistralai/mistralai/models/components";
+
+type Message = {
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+};
+
+type PayloadMessages = (
+  | (SystemMessage & {
+      role: "system";
+    })
+  | (UserMessage & {
+      role: "user";
+    })
+  | (AssistantMessage & {
+      role: "assistant";
+    })
+  | (ToolMessage & {
+      role: "tool";
+    })
+)[];
 
 function App() {
   const apiKey = import.meta.env.VITE_MISTRAL_API_KEY;
 
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>(
-    []
-  );
+  const [messages, setMessages] = useState<Message[]>([]);
   const [userPrompt, setUserPrompt] = useState<string>("");
   const [useMock, setUseMock] = useState<boolean>(true); // State to toggle mock response
   const [isLoading, setIsLoading] = useState<boolean>(false); // State for loading
@@ -21,20 +45,23 @@ function App() {
 
     setIsLoading(true); // Set loading state to true
 
-    const newMessages = [...messages, { role: "user", content: userPrompt }];
+    const newMessages = [
+      ...messages,
+      { role: "user", content: userPrompt },
+    ] as Message[];
 
     if (useMock) {
       // Fetch mock response from local JSON file
       const response = await fetch("/data/chatResponse.json");
       const mockData = await response.json();
-      const message = mockData.choices[0].message.content;
+      const message = mockData.choices[0].message.content as string;
       newMessages.push({ role: "assistant", content: message });
     } else {
       // Fetch response from API
       const client = new Mistral({ apiKey: apiKey });
       const chatResponse = await client.chat.complete({
         model: "mistral-tiny",
-        messages: [{ role: "user", content: userPrompt }],
+        messages: newMessages as PayloadMessages, // changed to send entire conversation
       });
 
       if (chatResponse?.choices?.length) {
