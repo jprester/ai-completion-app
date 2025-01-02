@@ -33,15 +33,17 @@ type PayloadMessages = (
 
 function App() {
   const apiKey = import.meta.env.VITE_MISTRAL_API_KEY;
+  const maxChats = import.meta.env.VITE_MAX_CHATS; // Maximum number of chats per session
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [userPrompt, setUserPrompt] = useState<string>("");
   const [useMock, setUseMock] = useState<boolean>(true); // State to toggle mock response
   const [isLoading, setIsLoading] = useState<boolean>(false); // State for loading
+  const [chatCount, setChatCount] = useState<number>(0); // State to track the number of chats
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchChatResponse = async () => {
-    if (!userPrompt) return;
+    if (!userPrompt || chatCount >= maxChats) return;
 
     setIsLoading(true); // Set loading state to true
 
@@ -75,6 +77,7 @@ function App() {
     setMessages(newMessages);
     setUserPrompt("");
     setIsLoading(false); // Set loading state to false
+    setChatCount(chatCount + 1); // Increment chat count
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -130,9 +133,17 @@ function App() {
       <div className="input-container">
         {isLoading ? (
           <div className="loading">Loading...</div>
+        ) : chatCount >= maxChats ? (
+          <div className="limit-reached">
+            Chat limit reached for this session. Please refresh the page to
+            start a new session.
+          </div>
         ) : (
           <>
             <div className="chat-container">
+              <div className="chat-input-label">
+                Maximum {maxChats} chats per session
+              </div>
               <textarea
                 value={userPrompt}
                 onChange={handleInputChange}

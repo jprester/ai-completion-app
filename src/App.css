@@ -25,6 +25,22 @@ body {
     padding: 0px 30px;
 }
 
+.limit-reached {
+    color: #eee;
+    font-size: 12px;
+    text-align: right;
+    margin-top: 10px;
+    position: relative;
+    bottom: 10px;
+}
+
+.chat-input-label {
+    color: #ccc;
+    font-size: 11px;
+    text-align: right;
+    margin-bottom: 10px;
+}
+
 .input-container .chat-input {
     width: 100%;
     padding: 10px 10px 40px 10px;
