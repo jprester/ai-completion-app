@@ -107,7 +107,21 @@ function App() {
 
   return (
     <div className="App">
-      <h1>CoolChat</h1>
+      <div className="header">
+        <div className="header-content">
+          <h1 className="header-title">CoolChat</h1>
+          <div className="header-actions mt-10">
+            <button
+              className="new-session button-primary"
+              onClick={() => {
+                setMessages([]);
+                setChatCount(0);
+              }}>
+              New Chat
+            </button>
+          </div>
+        </div>
+      </div>
       {import.meta.env.VITE_ENV !== "production" && (
         <div className="mock-toggle mt-20">
           <label>
