@@ -107,13 +107,15 @@ function App() {
 
   return (
     <div className="App">
-      <h1>Chat Bot</h1>
-      <div className="mock-toggle mt-20">
-        <label>
-          <input type="checkbox" checked={useMock} onChange={toggleMock} />
-          <span className="ml-10">Use Mock Response</span>
-        </label>
-      </div>
+      <h1>CoolChat</h1>
+      {import.meta.env.VITE_ENV !== "prod" && (
+        <div className="mock-toggle mt-20">
+          <label>
+            <input type="checkbox" checked={useMock} onChange={toggleMock} />
+            <span className="ml-10">Use Mock Response</span>
+          </label>
+        </div>
+      )}
 
       <div className="response-section mt-20">
         <div className="messages">
@@ -132,7 +134,7 @@ function App() {
 
       <div className="input-container">
         {isLoading ? (
-          <div className="loading">Loading...</div>
+          <div className="loading-spinner"></div>
         ) : chatCount >= maxChats ? (
           <div className="limit-reached">
             Chat limit reached for this session. Please refresh the page to

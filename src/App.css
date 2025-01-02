@@ -34,6 +34,22 @@ body {
     bottom: 10px;
 }
 
+.loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #ccc;
+    border-top-color: #333;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .chat-input-label {
     color: #ccc;
     font-size: 11px;
