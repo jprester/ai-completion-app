@@ -108,7 +108,7 @@ function App() {
   return (
     <div className="App">
       <h1>CoolChat</h1>
-      {import.meta.env.VITE_ENV !== "prod" && (
+      {import.meta.env.VITE_ENV !== "production" && (
         <div className="mock-toggle mt-20">
           <label>
             <input type="checkbox" checked={useMock} onChange={toggleMock} />
