@@ -37,7 +37,7 @@ function App() {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [userPrompt, setUserPrompt] = useState<string>("");
-  const [useMock, setUseMock] = useState<boolean>(true); // State to toggle mock response
+  const [useMock, setUseMock] = useState<boolean>(false); // State to toggle mock response
   const [isLoading, setIsLoading] = useState<boolean>(false); // State for loading
   const [chatCount, setChatCount] = useState<number>(0); // State to track the number of chats
   const messagesEndRef = useRef<HTMLDivElement>(null);
