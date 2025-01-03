@@ -7,7 +7,7 @@ body {
   margin: 0 auto;
   text-align: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #1e1e2c, #252537, #1e1e2c);
+  background: linear-gradient(135deg, #1e1e2c, #111, #1e1e2c);
 }
 
 .header-section {
@@ -17,6 +17,7 @@ body {
   z-index: 100;
   top: 0;
   border-bottom: 1px solid var(--divider-line);
+  opacity: 0.9;
 }
 
 .header-content {
@@ -89,18 +90,19 @@ button.button-primary:disabled {
   color: var(--text-light);
   font-size: 11px;
   text-align: right;
-  margin-bottom: 10px;
+  margin-bottom: 2px;
 }
 
 .input-section .chat-input {
   width: 100%;
+  opacity: 0.9;
   padding: 10px 10px 40px 10px;
   font-size: 14px;
   font-family: inherit;
   border-radius: 5px;
   font-size: 12px;
   font-size: 16px;
-  border: 1px solid #333;
+  border: 1px solid var(--divider-line);
   border-radius: 10px;
   resize: none;
   background-color: var(--input-background);
@@ -163,7 +165,7 @@ button.button-primary:disabled {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin-top: 60px;
+  margin-top: 45px;
   overflow-y: auto;
 }
 
@@ -195,6 +197,14 @@ button.button-primary:disabled {
 .assistant-message {
   align-self: flex-start;
   text-align: left;
+}
+.assistant-message li,
+.assistant-message p {
+  margin-bottom: 5px;
+}
+
+.assistant-message li {
+  margin-left: 15px;
 }
 
 .tooltip-container {
@@ -246,13 +256,16 @@ button.button-primary:disabled {
     top: 20%;
     padding: 0px 10px;
   }
+  .startup-logo {
+    display: block;
+  }
 
   .input-section.startup-position {
     bottom: 30%;
   }
 
   .startup-section h1.startup-title {
-    font-size: 26px;
+    font-size: 22px;
   }
   .header-content {
     padding: 10px 10px;

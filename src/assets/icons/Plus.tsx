@@ -6,7 +6,7 @@ function Plus() {
       height="24"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#e5e7eb"
+      stroke="#ffffff"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
