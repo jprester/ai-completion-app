@@ -130,7 +130,7 @@ function App() {
       {messages.length === 0 ? (
         <div className="startup-section">
           <h1 className="startup-title">
-            <FlashLogo /> Welcome to FlashChat App
+            <FlashLogo /> Welcome to SpeedyChat App
           </h1>
           <p>A simple and free LLM Chat Client optimised for clean and fast usage.</p>
         </div>
