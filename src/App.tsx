@@ -1,33 +1,29 @@
-import { useState, useEffect, useRef } from "react";
-import { Mistral } from "@mistralai/mistralai";
+import { useState, useEffect, useRef } from 'react';
+import { Mistral } from '@mistralai/mistralai';
 
-import ArrowUp from "./assets/icons/ArrowUp";
+import ArrowUp from './assets/icons/ArrowUp';
+import Plus from './assets/icons/Plus';
 
-import "./App.css";
-import {
-  AssistantMessage,
-  SystemMessage,
-  ToolMessage,
-  UserMessage,
-} from "@mistralai/mistralai/models/components";
+import './App.css';
+import { AssistantMessage, SystemMessage, ToolMessage, UserMessage } from '@mistralai/mistralai/models/components';
 
 type Message = {
-  role: "user" | "assistant" | "system" | "tool";
+  role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
 };
 
 type PayloadMessages = (
   | (SystemMessage & {
-      role: "system";
+      role: 'system';
     })
   | (UserMessage & {
-      role: "user";
+      role: 'user';
     })
   | (AssistantMessage & {
-      role: "assistant";
+      role: 'assistant';
     })
   | (ToolMessage & {
-      role: "tool";
+      role: 'tool';
     })
 )[];
 
@@ -36,7 +32,7 @@ function App() {
   const maxChats = import.meta.env.VITE_MAX_CHATS; // Maximum number of chats per session
 
   const [messages, setMessages] = useState<Message[]>([]);
-  const [userPrompt, setUserPrompt] = useState<string>("");
+  const [userPrompt, setUserPrompt] = useState<string>('');
   const [useMock, setUseMock] = useState<boolean>(false); // State to toggle mock response
   const [isLoading, setIsLoading] = useState<boolean>(false); // State for loading
   const [chatCount, setChatCount] = useState<number>(0); // State to track the number of chats
@@ -47,42 +43,39 @@ function App() {
 
     setIsLoading(true); // Set loading state to true
 
-    const newMessages = [
-      ...messages,
-      { role: "user", content: userPrompt },
-    ] as Message[];
+    const newMessages = [...messages, { role: 'user', content: userPrompt }] as Message[];
 
     if (useMock) {
       // Fetch mock response from local JSON file
-      const response = await fetch("/data/chatResponse.json");
+      const response = await fetch('/data/chatResponse.json');
       const mockData = await response.json();
       const message = mockData.choices[0].message.content as string;
-      newMessages.push({ role: "assistant", content: message });
+      newMessages.push({ role: 'assistant', content: message });
     } else {
       // Fetch response from API
       const client = new Mistral({ apiKey: apiKey });
       const chatResponse = await client.chat.complete({
-        model: "mistral-tiny",
+        model: 'mistral-tiny',
         messages: newMessages as PayloadMessages, // changed to send entire conversation
       });
 
       if (chatResponse?.choices?.length) {
         const message = chatResponse.choices[0].message.content as string;
         if (message) {
-          newMessages.push({ role: "assistant", content: message });
+          newMessages.push({ role: 'assistant', content: message });
         }
       }
     }
 
     setMessages(newMessages);
-    setUserPrompt("");
+    setUserPrompt('');
     setIsLoading(false); // Set loading state to false
     setChatCount(chatCount + 1); // Increment chat count
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setUserPrompt(event.target.value);
-    event.target.style.height = "auto"; // Reset the height
+    event.target.style.height = 'auto'; // Reset the height
     event.target.style.height = `${event.target.scrollHeight}px`; // Set the height to the scroll height
   };
 
@@ -91,7 +84,7 @@ function App() {
   };
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       fetchChatResponse();
     }
@@ -102,71 +95,72 @@ function App() {
   };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   return (
     <div className="App">
-      <div className="header">
+      <div className="header-section">
         <div className="header-content">
-          <h1 className="header-title">CoolChat</h1>
-          <div className="header-actions mt-10">
-            <button
-              className="new-session button-primary"
+          <div className="header-actions-left">
+            <i
+              className={`add-icon ${messages.length === 0 ? 'disabled' : ''}`}
               onClick={() => {
                 setMessages([]);
                 setChatCount(0);
-              }}>
-              New Chat
-            </button>
+              }}
+            >
+              <Plus />
+            </i>
+          </div>
+          <div className="header-actions-right">
+            {import.meta.env.VITE_ENV !== 'production' && (
+              <div className="mock-toggle ml-20">
+                <label>
+                  <input type="checkbox" checked={useMock} onChange={toggleMock} />
+                  <span className="ml-10">Use Mock Response</span>
+                </label>
+              </div>
+            )}
           </div>
         </div>
       </div>
-      {import.meta.env.VITE_ENV !== "production" && (
-        <div className="mock-toggle mt-20">
-          <label>
-            <input type="checkbox" checked={useMock} onChange={toggleMock} />
-            <span className="ml-10">Use Mock Response</span>
-          </label>
+      {messages.length === 0 ? (
+        <div className="startup-section">
+          <h1 className="startup-title">Welcome to Cool Chat</h1>
+          <p>A simple and free Chat Client for playing with LLMs.</p>
+        </div>
+      ) : (
+        <div className="messages-section mt-20">
+          <div className="messages-container container">
+            {messages.map((message, index) => (
+              <div key={index} className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}>
+                {message.content}
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
       )}
 
-      <div className="response-section mt-20">
-        <div className="messages">
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`message ${
-                message.role === "user" ? "user-message" : "assistant-message"
-              }`}>
-              {message.content}
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      <div className="input-container">
+      <div className="input-section" style={{ bottom: messages.length > 0 ? '0px' : '40%' }}>
         {isLoading ? (
           <div className="loading-spinner"></div>
         ) : chatCount >= maxChats ? (
-          <div className="limit-reached">
-            Chat limit reached for this session. Please refresh the page to
-            start a new session.
+          <div className="chat-status-label">
+            Chat limit reached for this session. Please refresh the page to start a new session.
           </div>
         ) : (
           <>
-            <div className="chat-container">
-              <div className="chat-input-label">
-                Maximum {maxChats} chats per session
-              </div>
+            <div className="chat-container container">
+              <div className="chat-input-label">Maximum {maxChats} chats per session</div>
               <textarea
                 value={userPrompt}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyPress}
                 placeholder="Enter your chat prompt here"
                 className="chat-input"
-                style={{ overflow: "hidden" }} // Hide overflow to prevent scrollbars
+                style={{ overflow: 'hidden' }} // Hide overflow to prevent scrollbars
               />
               <i className="send-icon" onClick={handleButtonClick}>
                 <ArrowUp />

@@ -1,168 +1,225 @@
 body {
-    background-color: #242424;
+  background-color: var(--background-dark);
 }
 
 .App {
-    padding: 10px 0px;
-    margin: 0 auto;
-    text-align: center;
+  padding: 0px 0px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.header-section {
+  padding: 0px 0px;
+  position: fixed;
+  width: 100%;
+  z-index: 100;
+  top: 0;
+  border-bottom: 1px solid var(--divider-line);
+}
+
+.header-content {
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  background-color: var(--background-dark);
+}
+
+button.button-primary:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.add-icon {
+  cursor: pointer;
+  position: relative;
+  top: 4px;
+}
+
+.add-icon.disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
 }
 
 .button-primary {
-    padding: 5px 10px;
-    font-size: 16px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    display: inline-block;
+  padding: 5px 10px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-block;
 }
 
-.input-container {
-    display: flex;
-    justify-content: center;
-    position: relative;
-    bottom: 0px;
-    position: fixed;
-    width: 100%;
+.input-section {
+  display: flex;
+  justify-content: center;
+  bottom: 0px;
+  position: fixed;
+  width: 100%;
 }
 
 .chat-container {
-    width: 960px;
-    position: relative;
-    margin: 0 auto;
-    padding: 0px 30px;
+  width: 960px;
+  padding: 0px 30px;
+  bottom: 10px;
 }
 
-.limit-reached {
-    color: #eee;
-    font-size: 12px;
-    text-align: right;
-    margin-top: 10px;
-    position: relative;
-    bottom: 10px;
+.chat-status-label {
+  color: #eee;
+  font-size: 12px;
+  text-align: right;
+  margin-top: 10px;
+  position: relative;
+  bottom: 10px;
 }
 
 .loading-spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid #ccc;
-    border-top-color: #333;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-    margin: 20px auto;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #ccc;
+  border-top-color: #333;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin: 20px auto;
 }
 
 @keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .chat-input-label {
+  color: #ccc;
+  font-size: 11px;
+  text-align: right;
+  margin-bottom: 10px;
+}
+
+.input-section .chat-input {
+  width: 100%;
+  padding: 10px 10px 40px 10px;
+  font-size: 14px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-size: 16px;
+  border: 1px solid #333;
+  border-radius: 10px;
+  resize: none;
+  background-color: var(--input-background);
+  &:focus {
+    outline: none;
+  }
+
+  &::placeholder {
     color: #ccc;
-    font-size: 11px;
-    text-align: right;
-    margin-bottom: 10px;
+  }
+
+  &:focus::placeholder {
+    color: transparent;
+  }
 }
 
-.input-container .chat-input {
-    width: 100%;
-    padding: 10px 10px 40px 10px;
-    font-size: 14px;
-    border-radius: 5px;
-    font-size: 12px;
-    font-size: 16px;
-    border: 1px solid #333;
-    border-radius: 10px;
-    resize: none;
-    &:focus {
-        outline: none;
-    }
+.input-section .send-icon {
+  font-size: 16px;
+  color: #ccc;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: block;
+  padding: 2px 6px;
+  position: absolute;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  bottom: 8px;
+  opacity: 0.8;
+  right: 40px;
+  bottom: 15px;
 
-    &::placeholder {
-        color: #ccc;
-    }
-
-    &:focus::placeholder {
-        color: transparent;
-    }
-
+  svg {
+    vertical-align: middle;
+  }
 }
-
-.input-container .send-icon {
-    font-size: 16px;
-    color: #ccc;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    display: block;
-    padding: 2px 6px;
-    position: absolute;
-    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;;
-    bottom: 8px;
-    opacity: 0.8;
-    right: 40px;
-    bottom: 15px;
-
-    svg {
-        vertical-align: middle;
-    }
-}
-
 
 .button-container {
-    display: flex;
-    justify-content: right;
-    margin-top: 10px;
+  display: flex;
+  justify-content: right;
+  margin-top: 10px;
 }
 .button {
-    padding: 10px 20px;
-    font-size: 16px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    display: inline-block;
-    position: absolute;
-    right: 0;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-block;
+  position: absolute;
+  right: 0;
 }
 
-.response-section {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    margin-top: 20px;
-    overflow-y: auto;
+.startup-section {
+  top: 30%;
+  position: absolute;
+  width: 100%;
 }
 
-.messages {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    max-width: 960px;
-    padding: 0px 30px;
-    margin-bottom: 100px;
+.messages-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: 60px;
+  overflow-y: auto;
+}
+
+.messages-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 30px;
+  margin-bottom: 100px;
 }
 
 .message {
-    max-width: 100%;
-    padding: 10px;
-    margin: 15px 0;
-    border-radius: 10px;
+  max-width: 100%;
+  padding: 10px;
+  margin: 15px 0;
+  border-radius: 10px;
 }
 
 .user-message {
-    align-self: flex-end;
-    background-color: #444;
-    max-width: 50%;
-    text-align: left;
+  align-self: flex-end;
+  background-color: var(--bubble-received);
+  max-width: 50%;
+  text-align: left;
 }
 
 .assistant-message {
-    align-self: flex-start;
-    text-align: left;
+  align-self: flex-start;
+  text-align: left;
+}
+
+/* media queries */
+@media (max-width: 960px) {
+  .startup-section {
+    top: 20%;
+    padding: 0px 10px;
+  }
+
+  .startup-section h1.startup-title {
+    font-size: 26px;
+  }
+  .header-content {
+    padding: 10px 10px;
+  }
+
+  .chat-container {
+    width: 100%;
+    padding: 0px 10px;
+  }
+  .input-section .send-icon {
+    right: 20px;
+  }
 }

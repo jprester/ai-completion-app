@@ -10,6 +10,17 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Colors */
+  --background-dark: #1e1e2c;
+  --bubble-received: #2d2d3f;
+  --bubble-sent: #3b82f6;
+  --highlight-green: #10b981;
+  --text-light: #e5e7eb;
+  --divider-line: #374151;
+  --input-background: #252533;
+  --button-blue: #2563eb;
+  --button-text: #ffffff;
 }
 
 * {
@@ -51,4 +62,32 @@ a:hover {
 }
 .mb-10 {
   margin-bottom: 10px;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px;
+  position: relative;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.flex {
+  display: flex;
+}
+
+.col {
+  flex: 1;
+}
+
+/* media queries */
+@media (max-width: 960px) {
+  .container {
+    padding: 0 10px;
+  }
 }
