@@ -180,6 +180,7 @@ button.button-primary:disabled {
   align-items: flex-start;
   padding: 0px 30px;
   margin-bottom: 100px;
+  width: 100%;
 }
 
 .message {

@@ -44,6 +44,7 @@ function App() {
     setIsLoading(true); // Set loading state to true
 
     const newMessages = [...messages, { role: 'user', content: userPrompt }] as Message[];
+    setMessages(newMessages);
 
     if (useMock) {
       // Fetch mock response from local JSON file
@@ -58,7 +59,6 @@ function App() {
         model: 'mistral-tiny',
         messages: newMessages as PayloadMessages, // changed to send entire conversation
       });
-
       if (chatResponse?.choices?.length) {
         const message = chatResponse.choices[0].message.content as string;
         if (message) {
