@@ -3,9 +3,11 @@ body {
 }
 
 .App {
-  padding: 0px 0px;
+  padding: 20px 0px 0px 0px;
   margin: 0 auto;
   text-align: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e1e2c, #252537, #1e1e2c);
 }
 
 .header-section {
@@ -46,6 +48,10 @@ button.button-primary:disabled {
   bottom: 0px;
   position: fixed;
   width: 100%;
+}
+
+.input-section.startup-position {
+  bottom: 40%;
 }
 
 .chat-container {
@@ -191,11 +197,58 @@ button.button-primary:disabled {
   text-align: left;
 }
 
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip-container .tooltip-text {
+  visibility: hidden;
+  width: 100px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  font-size: 14px;
+  z-index: 1;
+  top: 50%;
+  left: 125%; /* Position to the right of the icon */
+  margin-top: -15px; /* Center the tooltip vertically */
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip-container .tooltip-text::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%; /* Arrow on the left */
+  margin-top: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent #555 transparent transparent;
+}
+
+.tooltip-container:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
 /* media queries */
 @media (max-width: 960px) {
+  .App {
+    padding: 5px 0px 0px 0px;
+  }
+
   .startup-section {
     top: 20%;
     padding: 0px 10px;
+  }
+
+  .input-section.startup-position {
+    bottom: 30%;
   }
 
   .startup-section h1.startup-title {
@@ -209,6 +262,7 @@ button.button-primary:disabled {
     width: 100%;
     padding: 0px 10px;
   }
+
   .input-section .send-icon {
     right: 20px;
   }

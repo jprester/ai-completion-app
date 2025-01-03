@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Mistral } from '@mistralai/mistralai';
+import { AssistantMessage, SystemMessage, ToolMessage, UserMessage } from '@mistralai/mistralai/models/components';
 import { marked } from 'marked';
 
 import ArrowUp from './assets/icons/ArrowUp';
@@ -7,7 +8,6 @@ import Plus from './assets/icons/Plus';
 import FlashLogo from './assets/icons/FlashLogo';
 
 import './App.css';
-import { AssistantMessage, SystemMessage, ToolMessage, UserMessage } from '@mistralai/mistralai/models/components';
 
 type Message = {
   role: 'user' | 'assistant' | 'system' | 'tool';
@@ -105,15 +105,18 @@ function App() {
       <div className="header-section">
         <div className="header-content">
           <div className="header-actions-left">
-            <i
-              className={`add-icon ${messages.length === 0 ? 'disabled' : ''}`}
-              onClick={() => {
-                setMessages([]);
-                setChatCount(0);
-              }}
-            >
-              <Plus />
-            </i>
+            <div className="tooltip-container">
+              <i
+                className={`add-icon ${messages.length === 0 ? 'disabled' : ''}`}
+                onClick={() => {
+                  setMessages([]);
+                  setChatCount(0);
+                }}
+              >
+                <Plus />
+              </i>
+              <span className="tooltip-text">New Chat</span>
+            </div>
           </div>
           <div className="header-actions-right">
             {import.meta.env.VITE_ENV !== 'production' && (
@@ -149,7 +152,7 @@ function App() {
         </div>
       )}
 
-      <div className="input-section" style={{ bottom: messages.length > 0 ? '0px' : '40%' }}>
+      <div className={`input-section ${messages.length > 0 ? 'chat-position' : 'startup-position'}`}>
         {isLoading ? (
           <div className="loading-spinner"></div>
         ) : chatCount >= maxChats ? (
