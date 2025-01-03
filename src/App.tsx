@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Mistral } from '@mistralai/mistralai';
+import { marked } from 'marked';
 
 import ArrowUp from './assets/icons/ArrowUp';
 import Plus from './assets/icons/Plus';
@@ -134,9 +135,11 @@ function App() {
         <div className="messages-section mt-20">
           <div className="messages-container container">
             {messages.map((message, index) => (
-              <div key={index} className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}>
-                {message.content}
-              </div>
+              <div
+                key={index}
+                className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}
+                dangerouslySetInnerHTML={{ __html: marked(message.content) }} // Convert Markdown to HTML
+              />
             ))}
             <div ref={messagesEndRef} />
           </div>

@@ -101,6 +101,7 @@ button.button-primary:disabled {
   width: 100%;
   padding: 10px 10px 40px 10px;
   font-size: 14px;
+  font-family: inherit;
   border-radius: 5px;
   font-size: 12px;
   font-size: 16px;
