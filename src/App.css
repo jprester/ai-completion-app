@@ -52,7 +52,7 @@ button.button-primary:disabled {
 }
 
 .input-section.startup-position {
-  bottom: 40%;
+  bottom: 35%;
 }
 
 .chat-container {
@@ -145,7 +145,7 @@ button.button-primary:disabled {
 }
 
 .startup-section {
-  top: 30%;
+  top: 25%;
   position: absolute;
   width: 100%;
 }
