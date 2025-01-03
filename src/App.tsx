@@ -4,6 +4,7 @@ import { marked } from 'marked';
 
 import ArrowUp from './assets/icons/ArrowUp';
 import Plus from './assets/icons/Plus';
+import FlashLogo from './assets/icons/FlashLogo';
 
 import './App.css';
 import { AssistantMessage, SystemMessage, ToolMessage, UserMessage } from '@mistralai/mistralai/models/components';
@@ -77,7 +78,7 @@ function App() {
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setUserPrompt(event.target.value);
     event.target.style.height = 'auto'; // Reset the height
-    event.target.style.height = `${event.target.scrollHeight}px`; // Set the height to the scroll height
+    event.target.style.height = `${event.target.scrollHeight + 2}px`; // Set the height to the scroll height
   };
 
   const handleButtonClick = () => {
@@ -128,8 +129,10 @@ function App() {
       </div>
       {messages.length === 0 ? (
         <div className="startup-section">
-          <h1 className="startup-title">Welcome to Cool Chat</h1>
-          <p>A simple and free Chat Client for playing with LLMs.</p>
+          <h1 className="startup-title">
+            <FlashLogo /> Welcome to FlashChat App
+          </h1>
+          <p>A simple and free LLM Chat Client optimised for clean and fast usage.</p>
         </div>
       ) : (
         <div className="messages-section mt-20">
