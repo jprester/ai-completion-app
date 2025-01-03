@@ -138,7 +138,7 @@ function App() {
             </span>
             Welcome to SpeedyChat App
           </h1>
-          <p className="mt-10">"A simple and free LLM Chat Client optimised for clean and fast usage</p>
+          <p className="mt-10">A simple and free LLM Chat Client optimised for clean and fast usage</p>
         </div>
       ) : (
         <div className="messages-section mt-20">
