@@ -140,7 +140,7 @@ function App() {
       {messages.length === 0 ? (
         <Startup />
       ) : (
-        <div className="messages-section mt-20">
+        <div className="messages-section">
           <div className="messages-container container">
             {messages.map((message, index) => (
               <div

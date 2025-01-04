@@ -67,7 +67,8 @@ body {
   align-items: flex-start;
   padding: 0px 30px;
   margin-bottom: 100px;
-  width: 860px;
+  width: 100%;
+  max-width: 860px;
 }
 
 .message {
@@ -267,7 +268,7 @@ body {
     font-size: 22px;
   }
   .header-content {
-    padding: 10px 10px;
+    padding: 0px 10px;
   }
 
   .chat-container {
@@ -277,6 +278,10 @@ body {
 
   .chat-input-section .send-icon {
     right: 20px;
+  }
+
+  .messages-container {
+    padding: 0px 10px;
   }
 
   .user-message {
