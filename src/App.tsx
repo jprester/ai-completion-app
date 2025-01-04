@@ -149,6 +149,11 @@ function App() {
                 dangerouslySetInnerHTML={{ __html: marked(message.content) }} // Convert Markdown to HTML
               />
             ))}
+            {isLoading && (
+              <div className="message assistant-message loading-message">
+                <Spinner /> Thinking...
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
         </div>

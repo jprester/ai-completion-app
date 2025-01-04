@@ -155,6 +155,11 @@ body {
   }
 }
 
+.loading-message {
+  opacity: 0.7;
+  /* Add any other styling you want for the loading message */
+}
+
 .chat-input-label {
   color: var(--text-light);
   font-size: 11px;
@@ -252,6 +257,10 @@ body {
     padding: 5px 0px 0px 0px;
   }
 
+  .header-content {
+    padding: 2px 10px;
+  }
+
   .startup-section {
     top: 20%;
     padding: 0px 10px;
@@ -266,9 +275,6 @@ body {
 
   .startup-section h1.startup-title {
     font-size: 22px;
-  }
-  .header-content {
-    padding: 0px 10px;
   }
 
   .chat-container {
