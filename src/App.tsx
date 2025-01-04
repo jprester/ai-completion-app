@@ -3,11 +3,13 @@ import { Mistral } from '@mistralai/mistralai';
 import { AssistantMessage, SystemMessage, ToolMessage, UserMessage } from '@mistralai/mistralai/models/components';
 import { marked } from 'marked';
 
+import ToolTip from './components/tooltip/Tooltip';
+import Startup from './components/startup/Startup';
 import ArrowUp from './assets/icons/ArrowUp';
 import Plus from './assets/icons/Plus';
-import FlashLogo from './assets/icons/FlashLogo';
 
 import './App.css';
+import Spinner from './components/spinner/Spinner';
 
 type Message = {
   role: 'user' | 'assistant' | 'system' | 'tool';
@@ -97,7 +99,9 @@ function App() {
   };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   return (
@@ -105,18 +109,21 @@ function App() {
       <div className="header-section">
         <div className="header-content">
           <div className="header-actions-left">
-            <div className="tooltip-container">
-              <i
-                className={`add-icon ${messages.length === 0 ? 'disabled' : ''}`}
-                onClick={() => {
-                  setMessages([]);
-                  setChatCount(0);
-                }}
-              >
-                <Plus />
-              </i>
-              <span className="tooltip-text">New Chat</span>
-            </div>
+            <ToolTip
+              text="New Chat"
+              position="left"
+              children={
+                <i
+                  className={`add-icon ${messages.length === 0 ? 'disabled' : ''}`}
+                  onClick={() => {
+                    setMessages([]);
+                    setChatCount(0);
+                  }}
+                >
+                  <Plus />
+                </i>
+              }
+            />
           </div>
           <div className="header-actions-right">
             {import.meta.env.VITE_ENV !== 'production' && (
@@ -131,15 +138,7 @@ function App() {
         </div>
       </div>
       {messages.length === 0 ? (
-        <div className="startup-section">
-          <h1 className="startup-title">
-            <span className="startup-logo">
-              <FlashLogo />
-            </span>
-            Welcome to SpeedyChat App
-          </h1>
-          <p className="mt-10">A simple and free LLM Chat Client optimised for clean and fast usage</p>
-        </div>
+        <Startup />
       ) : (
         <div className="messages-section mt-20">
           <div className="messages-container container">
@@ -155,9 +154,9 @@ function App() {
         </div>
       )}
 
-      <div className={`input-section ${messages.length > 0 ? 'chat-position' : 'startup-position'}`}>
+      <div className={`chat-input-section ${messages.length > 0 ? 'chat-position' : 'startup-position'}`}>
         {isLoading ? (
-          <div className="loading-spinner"></div>
+          <Spinner />
         ) : chatCount >= maxChats ? (
           <div className="chat-status-label">
             Chat limit reached for this session. Please refresh the page to start a new session.
