@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { Mistral } from '@mistralai/mistralai';
 import { AssistantMessage, SystemMessage, ToolMessage, UserMessage } from '@mistralai/mistralai/models/components';
 import { marked } from 'marked';
 
@@ -32,8 +31,10 @@ type PayloadMessages = (
 )[];
 
 function App() {
-  const apiKey = import.meta.env.VITE_MISTRAL_API_KEY;
   const maxChats = import.meta.env.VITE_MAX_CHATS; // Maximum number of chats per session
+
+  const VITE_DOMAIN = import.meta.env.VITE_DOMAIN;
+  const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [userPrompt, setUserPrompt] = useState<string>('');
@@ -58,13 +59,24 @@ function App() {
       newMessages.push({ role: 'assistant', content: message });
     } else {
       // Fetch response from API
-      const client = new Mistral({ apiKey: apiKey });
-      const chatResponse = await client.chat.complete({
-        model: 'mistral-tiny',
-        messages: newMessages as PayloadMessages, // changed to send entire conversation
-      });
-      if (chatResponse?.choices?.length) {
-        const message = chatResponse.choices[0].message.content as string;
+      const chatResponse = await fetch(`${VITE_DOMAIN}/${VITE_API_BASE_URL}/completion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'mistral-tiny',
+          content: newMessages as PayloadMessages,
+        }),
+      })
+        .then((response) => {
+          return response.json();
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+      if (chatResponse?.response) {
+        const message = chatResponse.response as string;
         if (message) {
           newMessages.push({ role: 'assistant', content: message });
         }
