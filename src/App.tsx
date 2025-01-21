@@ -6,6 +6,7 @@ import ToolTip from './components/tooltip/Tooltip';
 import Startup from './components/startup/Startup';
 import ArrowUp from './assets/icons/ArrowUp';
 import Plus from './assets/icons/Plus';
+import Image from './assets/icons/Image';
 
 import './App.css';
 import Spinner from './components/spinner/Spinner';
@@ -41,6 +42,7 @@ function App() {
   const [useMock, setUseMock] = useState<boolean>(false); // State to toggle mock response
   const [isLoading, setIsLoading] = useState<boolean>(false); // State for loading
   const [chatCount, setChatCount] = useState<number>(0); // State to track the number of chats
+  const [chatOption, setChatOption] = useState<'summarize' | 'proofread' | null>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchChatResponse = async () => {
@@ -48,7 +50,15 @@ function App() {
 
     setIsLoading(true); // Set loading state to true
 
-    const newMessages = [...messages, { role: 'user', content: userPrompt }] as Message[];
+    let promptText = userPrompt;
+
+    if (chatOption === 'summarize') {
+      promptText = `Please summarize the following text: '${promptText}'`;
+    } else if (chatOption === 'proofread') {
+      promptText = `Please proofread and fix spelling, grammar and style of the following text: '${promptText}'`;
+    }
+
+    const newMessages = [...messages, { role: 'user', content: promptText }] as Message[];
     setMessages(newMessages);
 
     if (useMock) {
@@ -106,6 +116,18 @@ function App() {
     }
   };
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setMessages([...messages, { role: 'user', content: `<img src="${base64String}" alt="uploaded image" />` }]);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const toggleMock = () => {
     setUseMock(!useMock);
   };
@@ -115,6 +137,16 @@ function App() {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
+
+  // write variable for placeholder chat text depending on chatOption
+  let placeholderText = '';
+  if (chatOption === 'summarize') {
+    placeholderText = 'Enter your chat prompt here to summarize';
+  } else if (chatOption === 'proofread') {
+    placeholderText = 'Enter your chat prompt here to proofread';
+  } else {
+    placeholderText = 'Enter your chat prompt here';
+  }
 
   return (
     <div className="App">
@@ -186,13 +218,51 @@ function App() {
                 value={userPrompt}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyPress}
-                placeholder="Enter your chat prompt here"
-                className="chat-input"
+                placeholder={placeholderText}
+                className={`chat-input ${chatOption ? chatOption : ''}`}
                 style={{ overflow: 'hidden' }} // Hide overflow to prevent scrollbars
               />
-              <i className="send-icon" onClick={handleButtonClick}>
-                <ArrowUp />
-              </i>
+              <div className="chat-input-actions">
+                <div className="chat-input-actions-container">
+                  <div className="chat-input-actions-left">
+                    <label className="image-upload-icon">
+                      <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+                      <Image />
+                    </label>
+                    <div className="actions-pills-group">
+                      <div
+                        className={`actions-pill summarize ${chatOption === 'summarize' ? 'active' : ''}`}
+                        onClick={() => {
+                          if (chatOption === 'summarize') {
+                            setChatOption(null);
+                          } else {
+                            setChatOption('summarize');
+                          }
+                        }}
+                      >
+                        Summarize
+                      </div>
+                      <div
+                        className={`actions-pill proofread ${chatOption === 'proofread' ? 'active' : ''}`}
+                        onClick={() => {
+                          if (chatOption === 'proofread') {
+                            setChatOption(null);
+                          } else {
+                            setChatOption('proofread');
+                          }
+                        }}
+                      >
+                        Proofread
+                      </div>
+                    </div>
+                  </div>
+                  <div className="chat-input-actions-right">
+                    <i className={`send-icon ${!userPrompt.length ? 'inactive' : ''}`} onClick={handleButtonClick}>
+                      <ArrowUp />
+                    </i>
+                  </div>
+                </div>
+              </div>
             </div>
           </>
         )}

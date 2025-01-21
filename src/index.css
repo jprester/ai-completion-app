@@ -83,6 +83,26 @@ a:hover {
   flex: 1;
 }
 
+.position-relative {
+  position: relative;
+}
+
+.position-absolute {
+  position: absolute;
+}
+
+.position-fixed {
+  position: fixed;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.display-flex {
+  display: flex;
+}
+
 /* media queries */
 @media (max-width: 960px) {
   .container {
