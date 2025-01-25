@@ -134,7 +134,7 @@ function App() {
 
   useEffect(() => {
     if (messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [messages]);
 
