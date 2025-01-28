@@ -213,7 +213,7 @@ function App() {
         ) : (
           <>
             <div className="chat-container container">
-              <div className="chat-input-label">Maximum {maxChats} chats per session</div>
+              {messages.length === 0 && <div className="chat-input-label">Maximum {maxChats} chats per session</div>}
               <textarea
                 value={userPrompt}
                 onChange={handleInputChange}
@@ -252,7 +252,7 @@ function App() {
                           }
                         }}
                       >
-                        Proofread
+                        Improve Text
                       </div>
                     </div>
                   </div>
