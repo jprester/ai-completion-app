@@ -87,6 +87,12 @@ body {
   box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.1);
 }
 
+.user-message img {
+  max-width: 300px;
+  height: auto;
+  border-radius: 10px;
+}
+
 .assistant-message {
   align-self: flex-start;
   text-align: left;
@@ -235,8 +241,9 @@ textarea::placeholder {
 }
 
 .actions-pills-group {
-  margin-left: 20px;
-  display: inline-block;
+  /* display: flex;
+  justify-content: center;
+  text-align: center; */
 }
 
 .actions-pill {
@@ -262,20 +269,64 @@ textarea::placeholder {
   background-color: var(--highlight-green);
 }
 
-.chat-container .chat-input-actions .chat-input-actions-left svg {
+.chat-container .chat-input-actions .image-upload-icon {
+  cursor: pointer;
+  position: relative;
+  top: 2px;
+  left: 8px;
+}
+
+.chat-container .chat-input-actions .image-upload-icon svg {
   vertical-align: middle;
   width: 20px;
   height: 20px;
-}
-
-.chat-container .chat-input-actions .chat-input-actions-left .image-upload-icon {
-  cursor: pointer;
 }
 
 .chat-container .chat-input-actions .chat-input-actions-right {
   display: block;
   position: relative;
   bottom: 0px;
+}
+
+.image-added-label {
+  color: var(--text-light);
+  font-size: 12px;
+  margin-top: 5px;
+  position: relative;
+  top: 5px;
+  left: 0px;
+  text-align: left;
+  background-color: var(--input-background);
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 5px 1px 5px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--divider-line);
+  width: 100%;
+}
+
+.image-added-label .added-image-thumbnail {
+  max-width: 50px;
+  max-height: 50px;
+  height: auto;
+  border-radius: 5px;
+  margin: 5px 5px 0px 0px;
+  position: relative;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+.image-added-label .close-icon {
+  cursor: pointer;
+  position: relative;
+  top: 0px;
+  left: 2px;
+}
+
+.image-added-label .close-icon svg {
+  vertical-align: middle;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
 }
 
 .send-icon {
@@ -310,7 +361,7 @@ textarea::placeholder {
   font-size: 14px;
   z-index: 1;
   top: 50%;
-  left: 125%; /* Position to the right of the icon */
+  left: 180%; /* Position to the right of the icon */
   margin-top: -15px; /* Center the tooltip vertically */
   opacity: 0;
   transition: opacity 0.3s;
@@ -369,5 +420,12 @@ textarea::placeholder {
 
   .user-message {
     max-width: 70%;
+  }
+
+  .user-message img {
+    max-width: 200px;
+    max-height: 200px;
+    height: auto;
+    border-radius: 10px;
   }
 }
