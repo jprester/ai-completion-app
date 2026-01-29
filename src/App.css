@@ -38,6 +38,45 @@ body {
   opacity: 0.3;
 }
 
+.add-icon,
+.send-icon,
+.close-icon {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.error-banner {
+  position: fixed;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #dc3545;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-width: 90%;
+}
+
+.error-banner button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.error-banner button:hover {
+  opacity: 0.8;
+}
+
 .startup-section {
   top: 25%;
   position: absolute;
@@ -185,6 +224,8 @@ body {
   resize: none;
   background-color: var(--input-background);
   box-shadow: 5px 1px 5px rgba(0, 0, 0, 0.1);
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .chat-input-section.chat-position .chat-input {
@@ -255,6 +296,8 @@ textarea::placeholder {
   margin: 0px 2px;
   cursor: pointer;
   font-size: 12px;
+  border: none;
+  font-family: inherit;
 }
 
 .actions-pill.active {

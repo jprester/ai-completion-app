@@ -1,16 +1,17 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { AssistantMessage, SystemMessage, ToolMessage, UserMessage } from '@mistralai/mistralai/models/components';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 import ToolTip from './components/tooltip/Tooltip';
 import Startup from './components/startup/Startup';
 import ArrowUp from './assets/icons/ArrowUp';
 import Plus from './assets/icons/Plus';
 import Image from './assets/icons/Image';
-
-import './App.css';
 import Spinner from './components/spinner/Spinner';
 import Close from './assets/icons/Close';
+import { fetchCompletion, fetchImageRecognition, fetchMockResponse } from './services/api';
+
+import './App.css';
 
 type Message = {
   role: 'user' | 'assistant' | 'system' | 'tool';
@@ -18,43 +19,36 @@ type Message = {
   content: string;
 };
 
-type PayloadMessages = (
-  | (SystemMessage & {
-      role: 'system';
-    })
-  | (UserMessage & {
-      role: 'user';
-    })
-  | (AssistantMessage & {
-      role: 'assistant';
-    })
-  | (ToolMessage & {
-      role: 'tool';
-    })
-)[];
+type ChatOption = 'summarize' | 'proofread' | 'image-recognition' | null;
 
 function App() {
-  const maxChats = import.meta.env.VITE_MAX_CHATS; // Maximum number of chats per session
-
-  const VITE_DOMAIN = import.meta.env.VITE_DOMAIN;
-  const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const maxChats = import.meta.env.VITE_MAX_CHATS;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [userPrompt, setUserPrompt] = useState<string>('');
-  const [useMock, setUseMock] = useState<boolean>(false); // State to toggle mock response
-  const [isLoading, setIsLoading] = useState<boolean>(false); // State for loading
-  const [chatCount, setChatCount] = useState<number>(0); // State to track the number of chats
-  const [chatOption, setChatOption] = useState<'summarize' | 'proofread' | 'image-recognition' | null>();
+  const [useMock, setUseMock] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [chatCount, setChatCount] = useState<number>(0);
+  const [chatOption, setChatOption] = useState<ChatOption>(null);
+  const [error, setError] = useState<string | null>(null);
   const [imagePrompt, setImagePrompt] = useState<{
     base64String: string;
     name: string;
   }>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const sanitizeHtml = useCallback((content: string): string => {
+    const rawHtml = marked(content) as string;
+    return DOMPurify.sanitize(rawHtml);
+  }, []);
 
   const fetchChatResponse = async () => {
-    if (!userPrompt || chatCount >= maxChats) return;
+    if (!userPrompt && !imagePrompt) return;
+    if (chatCount >= maxChats) return;
 
-    setIsLoading(true); // Set loading state to true
+    setIsLoading(true);
+    setError(null);
 
     let promptText = userPrompt;
 
@@ -62,98 +56,63 @@ function App() {
       promptText = `Please summarize the following text: '${promptText}'`;
     } else if (chatOption === 'proofread') {
       promptText = `Please proofread and fix spelling, grammar and style of the following text: '${promptText}'`;
-    } else if (chatOption === 'image-recognition' && !imagePrompt) {
+    } else if (chatOption === 'image-recognition' && !userPrompt) {
       promptText = 'Please provide a description of the image';
     }
 
-    let newMessages = [...messages] as Message[];
+    const newMessages = [...messages] as Message[];
 
     if (imagePrompt) {
       newMessages.push(
-        {
-          role: 'user',
-          type: 'text',
-          content: promptText,
-        },
-        {
-          role: 'user',
-          type: 'image',
-          content: imagePrompt.base64String,
-        }
+        { role: 'user', type: 'text', content: promptText },
+        { role: 'user', type: 'image', content: imagePrompt.base64String }
       );
     } else {
-      newMessages = newMessages.concat({ role: 'user', type: 'text', content: promptText });
+      newMessages.push({ role: 'user', type: 'text', content: promptText });
     }
     setMessages(newMessages);
 
-    if (useMock) {
-      // Fetch mock response from local JSON file
-      const response = await fetch('/data/chatResponse.json');
-      const mockData = await response.json();
-      const message = mockData.choices[0].message.content as string;
-      newMessages.push({ role: 'assistant', type: 'text', content: message });
-    } else if (chatOption === 'image-recognition') {
-      // Fetch response from API
-      const chatResponse = await fetch(`${VITE_DOMAIN}/${VITE_API_BASE_URL}/image-recognition`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'pixtral-12b-2409',
-          messages: newMessages as PayloadMessages,
-        }),
-      })
-        .then((response) => {
-          return response.json();
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-        });
-      if (chatResponse?.response) {
-        const message = chatResponse.response as string;
-        if (message) {
-          newMessages.push({ role: 'assistant', type: 'text', content: message });
-        }
-      }
-    } else {
-      // Fetch response from API
-      const chatResponse = await fetch(`${VITE_DOMAIN}/${VITE_API_BASE_URL}/completion`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'mistral-tiny',
-          content: newMessages.filter((message) => message.type === 'text') as PayloadMessages,
-        }),
-      })
-        .then((response) => {
-          return response.json();
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-        });
-      if (chatResponse?.response) {
-        const message = chatResponse.response as string;
-        if (message) {
-          newMessages.push({ role: 'assistant', type: 'text', content: message });
-        }
-      }
-    }
+    try {
+      let responseMessage: string | undefined;
 
-    setMessages(newMessages);
-    setUserPrompt('');
-    setImagePrompt(undefined);
-    setIsLoading(false); // Set loading state to false
-    setChatCount(chatCount + 1); // Increment chat count
-    setChatOption(null);
+      if (useMock) {
+        const mockData = await fetchMockResponse();
+        responseMessage = mockData.response;
+      } else if (chatOption === 'image-recognition') {
+        const chatResponse = await fetchImageRecognition(newMessages);
+        responseMessage = chatResponse.response;
+      } else {
+        const textMessages = newMessages
+          .filter((msg) => msg.type === 'text')
+          .map((msg) => ({ role: msg.role, content: msg.content }));
+        const chatResponse = await fetchCompletion(textMessages);
+        responseMessage = chatResponse.response;
+      }
+
+      if (responseMessage) {
+        setMessages([...newMessages, { role: 'assistant', type: 'text', content: responseMessage }]);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(errorMessage);
+      console.error('Chat error:', err);
+    } finally {
+      setUserPrompt('');
+      setImagePrompt(undefined);
+      setIsLoading(false);
+      setChatCount((prev) => prev + 1);
+      setChatOption(null);
+    }
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setUserPrompt(event.target.value);
-    event.target.style.height = 'auto'; // Reset the height
-    event.target.style.height = `${event.target.scrollHeight + 2}px`; // Set the height to the scroll height
+    const textarea = event.target;
+    textarea.style.height = 'auto';
+    const maxHeight = 300;
+    const newHeight = Math.min(textarea.scrollHeight + 2, maxHeight);
+    textarea.style.height = `${newHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
   };
 
   const handleButtonClick = () => {
@@ -167,21 +126,35 @@ function App() {
     }
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setChatOption('image-recognition');
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImagePrompt({
-          base64String,
-          name: file.name,
-        });
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setImagePrompt({ base64String, name: file.name });
+    };
+    reader.onerror = () => {
+      setError('Failed to read image file');
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
-  };
+  }, []);
+
+  const handleNewChat = useCallback(() => {
+    setMessages([]);
+    setChatCount(0);
+    setError(null);
+    setChatOption(null);
+    setImagePrompt(undefined);
+    setUserPrompt('');
+  }, []);
 
   const toggleMock = () => {
     setUseMock(!useMock);
@@ -193,40 +166,37 @@ function App() {
     }
   }, [messages]);
 
-  // write variable for placeholder chat text depending on chatOption
-  let placeholderText = '';
-  if (chatOption === 'summarize') {
-    placeholderText = 'Enter your chat prompt here to summarize';
-  } else if (chatOption === 'proofread') {
-    placeholderText = 'Enter your chat prompt here to proofread';
-  } else if (chatOption === 'image-recognition') {
-    placeholderText = 'Ask questions about the image';
-  } else {
-    placeholderText = 'Enter your chat prompt here';
-  }
+  const placeholderText = useMemo(() => {
+    switch (chatOption) {
+      case 'summarize':
+        return 'Enter your chat prompt here to summarize';
+      case 'proofread':
+        return 'Enter your chat prompt here to proofread';
+      case 'image-recognition':
+        return 'Ask questions about the image';
+      default:
+        return 'Enter your chat prompt here';
+    }
+  }, [chatOption]);
 
   const initialChatState = useMemo(() => messages.length === 0, [messages]);
+  const canSendMessage = userPrompt.length > 0 || imagePrompt?.base64String;
 
   return (
     <div className="App">
       <div className="header-section">
         <div className="header-content">
           <div className="header-actions-left">
-            <ToolTip
-              text="New Chat"
-              position="left"
-              children={
-                <i
-                  className={`add-icon ${messages.length === 0 ? 'disabled' : ''}`}
-                  onClick={() => {
-                    setMessages([]);
-                    setChatCount(0);
-                  }}
-                >
-                  <Plus />
-                </i>
-              }
-            />
+            <ToolTip text="New Chat" position="left">
+              <button
+                className={`add-icon ${messages.length === 0 ? 'disabled' : ''}`}
+                onClick={handleNewChat}
+                disabled={messages.length === 0}
+                aria-label="Start new chat"
+              >
+                <Plus />
+              </button>
+            </ToolTip>
           </div>
           <div className="header-actions-right">
             {import.meta.env.VITE_ENV !== 'production' && (
@@ -240,6 +210,16 @@ function App() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="error-banner" role="alert">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} aria-label="Dismiss error">
+            <Close />
+          </button>
+        </div>
+      )}
+
       {messages.length === 0 ? (
         <Startup />
       ) : (
@@ -251,7 +231,7 @@ function App() {
                   <div
                     key={index}
                     className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}
-                    dangerouslySetInnerHTML={{ __html: marked(message.content) }} // Convert Markdown to HTML
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(message.content) }}
                   />
                 );
               } else if (message.content && message.type === 'image') {
@@ -260,10 +240,11 @@ function App() {
                     key={index}
                     className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}
                   >
-                    <img src={message.content as string} className="image-message" />
+                    <img src={message.content} className="image-message" alt="Uploaded content" />
                   </div>
                 );
               }
+              return null;
             })}
             {isLoading && (
               <div className="message assistant-message loading-message">
@@ -287,11 +268,15 @@ function App() {
             <div className="chat-container container">
               {imagePrompt?.name && (
                 <div className="image-added-label">
-                  <img src={imagePrompt.base64String} className="added-image-thumbnail" />
-                  {imagePrompt?.name}{' '}
-                  <span className="close-icon" onClick={() => setImagePrompt(undefined)}>
+                  <img src={imagePrompt.base64String} className="added-image-thumbnail" alt="Selected image preview" />
+                  {imagePrompt?.name}
+                  <button
+                    className="close-icon"
+                    onClick={() => setImagePrompt(undefined)}
+                    aria-label="Remove selected image"
+                  >
                     <Close />
-                  </span>
+                  </button>
                 </div>
               )}
               <textarea
@@ -300,72 +285,62 @@ function App() {
                 onKeyDown={handleKeyPress}
                 placeholder={placeholderText}
                 className={`chat-input ${chatOption ? chatOption : ''}`}
-                style={{ overflow: 'hidden' }} // Hide overflow to prevent scrollbars
+                style={{ overflow: 'hidden' }}
+                aria-label="Chat message input"
               />
               <div className="chat-input-actions">
                 <div className="chat-input-actions-container">
                   <div className="chat-input-actions-left">
                     {initialChatState && (
                       <div className="actions-pills-group">
-                        <div
+                        <button
                           className={`actions-pill summarize ${chatOption === 'summarize' ? 'active' : ''}`}
                           onClick={() => {
                             setImagePrompt(undefined);
-                            if (chatOption === 'summarize') {
-                              setChatOption(null);
-                            } else {
-                              setChatOption('summarize');
-                            }
+                            setChatOption(chatOption === 'summarize' ? null : 'summarize');
                           }}
+                          aria-pressed={chatOption === 'summarize'}
                         >
                           Summarize
-                        </div>
+                        </button>
 
-                        <div
+                        <button
                           className={`actions-pill proofread ${chatOption === 'proofread' ? 'active' : ''}`}
                           onClick={() => {
                             setImagePrompt(undefined);
-                            if (chatOption === 'proofread') {
-                              setChatOption(null);
-                            } else {
-                              setChatOption('proofread');
-                            }
+                            setChatOption(chatOption === 'proofread' ? null : 'proofread');
                           }}
+                          aria-pressed={chatOption === 'proofread'}
                         >
                           Improve Text
-                        </div>
-                        <ToolTip
-                          text="Image Recognition"
-                          position="right"
-                          children={
-                            <label className="image-upload-icon">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                                style={{ display: 'none' }}
-                              />
-                              <Image />
-                            </label>
-                          }
-                        />
+                        </button>
+                        <ToolTip text="Image Recognition" position="right">
+                          <label className="image-upload-icon" aria-label="Upload image for recognition">
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageUpload}
+                              style={{ display: 'none' }}
+                            />
+                            <Image />
+                          </label>
+                        </ToolTip>
                       </div>
                     )}
                   </div>
 
                   <div className="chat-input-actions-right">
-                    <ToolTip
-                      text="Send Chat"
-                      position="left"
-                      children={
-                        <i
-                          className={`send-icon ${!userPrompt.length && !imagePrompt?.base64String ? 'inactive' : ''}`}
-                          onClick={handleButtonClick}
-                        >
-                          <ArrowUp />
-                        </i>
-                      }
-                    />
+                    <ToolTip text="Send Chat" position="left">
+                      <button
+                        className={`send-icon ${!canSendMessage ? 'inactive' : ''}`}
+                        onClick={handleButtonClick}
+                        disabled={!canSendMessage}
+                        aria-label="Send message"
+                      >
+                        <ArrowUp />
+                      </button>
+                    </ToolTip>
                   </div>
                 </div>
               </div>
