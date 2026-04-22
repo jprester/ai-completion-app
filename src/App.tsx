@@ -1,76 +1,228 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { marked } from 'marked';
-import DOMPurify from 'dompurify';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import ToolTip from './components/tooltip/Tooltip';
-import Startup from './components/startup/Startup';
-import ArrowUp from './assets/icons/ArrowUp';
-import Plus from './assets/icons/Plus';
-import Image from './assets/icons/Image';
+import Rail from './components/rail/Rail';
+import Palette from './components/palette/Palette';
 import Spinner from './components/spinner/Spinner';
-import Close from './assets/icons/Close';
+import SettingsModal from './components/settings/Settings';
+import MessageList from './components/messages/MessageList';
+
+import Plus from './assets/icons/Plus';
+import ImageIcon from './assets/icons/Image';
+import Search from './assets/icons/Search';
+import Star from './assets/icons/Star';
+import Send from './assets/icons/Send';
+import X from './assets/icons/X';
+import Trash from './assets/icons/Trash';
+import Gear from './assets/icons/Gear';
+import Sun from './assets/icons/Sun';
+import Moon from './assets/icons/Moon';
+
 import { fetchCompletion, fetchImageRecognition, fetchMockResponse } from './services/api';
+import { useConversations, autoTitle } from './hooks/useConversations';
+import type { Message } from './hooks/useConversations';
+import { useHotkeys } from './hooks/useHotkeys';
+import { useSettings } from './hooks/useSettings';
+import { QUICK_ACTIONS, getAction } from './quickActions';
+import type { ChatOption } from './quickActions';
 
 import './App.css';
 
-type Message = {
-  role: 'user' | 'assistant' | 'system' | 'tool';
-  type: 'text' | 'image';
-  content: string;
-};
-
-type ChatOption = 'summarize' | 'proofread' | 'image-recognition' | null;
+const RAIL_KEY = 'mc-rail';
+const MAX_CHATS_DEFAULT = 20;
 
 function App() {
-  const maxChats = import.meta.env.VITE_MAX_CHATS;
+  const maxChats = (() => {
+    const n = parseInt(import.meta.env.VITE_MAX_CHATS, 10);
+    return isFinite(n) && n > 0 ? n : MAX_CHATS_DEFAULT;
+  })();
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [userPrompt, setUserPrompt] = useState<string>('');
-  const [useMock, setUseMock] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [chatCount, setChatCount] = useState<number>(0);
+  const {
+    conversations,
+    activeId,
+    setActiveId,
+    createConversation,
+    appendMessages,
+    updateConversation,
+    deleteConversation,
+    togglePin,
+    clearAll,
+  } = useConversations();
+
+  const { settings, setSettings, resetSettings } = useSettings();
+
+  const [railExpanded, setRailExpanded] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(RAIL_KEY) !== 'collapsed';
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(RAIL_KEY, railExpanded ? 'expanded' : 'collapsed');
+    } catch {
+      // ignore quota / privacy-mode errors
+    }
+  }, [railExpanded]);
+
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const apply = (mode: 'light' | 'dark') => {
+      html.setAttribute('data-theme', mode);
+      setResolvedTheme(mode);
+    };
+    if (settings.theme === 'system') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      apply(mq.matches ? 'dark' : 'light');
+      const listener = (e: MediaQueryListEvent) => apply(e.matches ? 'dark' : 'light');
+      mq.addEventListener('change', listener);
+      return () => mq.removeEventListener('change', listener);
+    }
+    apply(settings.theme);
+  }, [settings.theme]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--accent', settings.accent);
+  }, [settings.accent]);
+
+  const [userPrompt, setUserPrompt] = useState('');
+  const [useMock, setUseMock] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [chatOption, setChatOption] = useState<ChatOption>(null);
   const [error, setError] = useState<string | null>(null);
-  const [imagePrompt, setImagePrompt] = useState<{
-    base64String: string;
-    name: string;
-  }>();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imagePrompt, setImagePrompt] = useState<{ base64String: string; name: string }>();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
-  const sanitizeHtml = useCallback((content: string): string => {
-    const rawHtml = marked(content) as string;
-    return DOMPurify.sanitize(rawHtml);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const activeConversation = useMemo(
+    () => conversations.find((c) => c.id === activeId) || null,
+    [conversations, activeId]
+  );
+  const messages = activeConversation?.messages ?? [];
+  const chatCount = messages.filter((m) => m.role === 'user' && m.type === 'text').length;
+  const initialChatState = messages.length === 0;
+
+  const autoResize = useCallback(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 240) + 'px';
   }, []);
 
+  useEffect(() => {
+    autoResize();
+  }, [userPrompt, autoResize]);
+
+  const resetComposer = useCallback(() => {
+    setUserPrompt('');
+    setImagePrompt(undefined);
+    setChatOption(null);
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+  }, []);
+
+  const focusComposer = () => setTimeout(() => textareaRef.current?.focus(), 0);
+
+  const handleNewChat = useCallback(() => {
+    setActiveId(null);
+    setError(null);
+    resetComposer();
+    focusComposer();
+  }, [resetComposer, setActiveId]);
+
+  const handleSelectChat = useCallback(
+    (id: string) => {
+      setActiveId(id);
+      setError(null);
+      resetComposer();
+    },
+    [resetComposer, setActiveId]
+  );
+
+  const applyQuickAction = useCallback((id: Exclude<ChatOption, null>) => {
+    setChatOption((prev) => (prev === id ? null : id));
+    if (id === 'image-recognition') {
+      fileInputRef.current?.click();
+    } else {
+      setImagePrompt(undefined);
+      focusComposer();
+    }
+  }, []);
+
+  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setChatOption('image-recognition');
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setImagePrompt({ base64String, name: file.name });
+      focusComposer();
+    };
+    reader.onerror = () => setError('Failed to read image file');
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, []);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 1600);
+  }, []);
+
+  const copyMessage = useCallback(
+    async (content: string) => {
+      try {
+        await navigator.clipboard.writeText(content);
+        showToast('Copied');
+      } catch {
+        showToast('Copy failed');
+      }
+    },
+    [showToast]
+  );
+
   const fetchChatResponse = async () => {
-    if (!userPrompt && !imagePrompt) return;
+    if (isLoading) return;
+    if (!userPrompt.trim() && !imagePrompt) return;
     if (chatCount >= maxChats) return;
 
     setIsLoading(true);
     setError(null);
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const signal = controller.signal;
 
-    let promptText = userPrompt;
+    const action = getAction(chatOption);
+    const promptText = action ? action.prompt(userPrompt) : userPrompt;
 
-    if (chatOption === 'summarize') {
-      promptText = `Please summarize the following text: '${promptText}'`;
-    } else if (chatOption === 'proofread') {
-      promptText = `Please proofread and fix spelling, grammar and style of the following text: '${promptText}'`;
-    } else if (chatOption === 'image-recognition' && !userPrompt) {
-      promptText = 'Please provide a description of the image';
+    let conv = activeConversation;
+    if (!conv) {
+      conv = createConversation(userPrompt || action?.label || 'New chat');
+    } else if (conv.messages.length === 0) {
+      updateConversation(conv.id, {
+        title: autoTitle(userPrompt || action?.label || 'New chat'),
+      });
     }
+    const convId = conv.id;
 
-    const newMessages = [...messages] as Message[];
+    const newUserMessages: Message[] = imagePrompt
+      ? [
+          { role: 'user', type: 'text', content: promptText },
+          { role: 'user', type: 'image', content: imagePrompt.base64String },
+        ]
+      : [{ role: 'user', type: 'text', content: promptText }];
 
-    if (imagePrompt) {
-      newMessages.push(
-        { role: 'user', type: 'text', content: promptText },
-        { role: 'user', type: 'image', content: imagePrompt.base64String }
-      );
-    } else {
-      newMessages.push({ role: 'user', type: 'text', content: promptText });
-    }
-    setMessages(newMessages);
+    appendMessages(convId, newUserMessages);
+
+    const historyForApi: Message[] = [...conv.messages, ...newUserMessages];
 
     try {
       let responseMessage: string | undefined;
@@ -79,117 +231,194 @@ function App() {
         const mockData = await fetchMockResponse();
         responseMessage = mockData.response;
       } else if (chatOption === 'image-recognition') {
-        const chatResponse = await fetchImageRecognition(newMessages);
+        const chatResponse = await fetchImageRecognition(historyForApi, settings.imageModel, settings.imageProvider, signal);
         responseMessage = chatResponse.response;
       } else {
-        const textMessages = newMessages
-          .filter((msg) => msg.type === 'text')
-          .map((msg) => ({ role: msg.role, content: msg.content }));
-        const chatResponse = await fetchCompletion(textMessages);
+        const textMessages = historyForApi
+          .filter((m) => m.type === 'text')
+          .map((m) => ({ role: m.role, content: m.content }));
+        const chatResponse = await fetchCompletion(textMessages, settings.textModel, settings.textProvider, signal);
         responseMessage = chatResponse.response;
       }
 
       if (responseMessage) {
-        setMessages([...newMessages, { role: 'assistant', type: 'text', content: responseMessage }]);
+        appendMessages(convId, [{ role: 'assistant', type: 'text', content: responseMessage }]);
       }
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
       console.error('Chat error:', err);
     } finally {
-      setUserPrompt('');
-      setImagePrompt(undefined);
-      setIsLoading(false);
-      setChatCount((prev) => prev + 1);
-      setChatOption(null);
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+        resetComposer();
+        setIsLoading(false);
+      }
     }
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setUserPrompt(event.target.value);
-    const textarea = event.target;
-    textarea.style.height = 'auto';
-    const maxHeight = 300;
-    const newHeight = Math.min(textarea.scrollHeight + 2, maxHeight);
-    textarea.style.height = `${newHeight}px`;
-    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
-  };
-
-  const handleButtonClick = () => {
-    fetchChatResponse();
   };
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       fetchChatResponse();
+    } else if (event.key === 'Backspace' && userPrompt === '' && chatOption) {
+      event.preventDefault();
+      setChatOption(null);
+      setImagePrompt(undefined);
     }
   };
 
-  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    setChatOption('image-recognition');
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setImagePrompt({ base64String, name: file.name });
-    };
-    reader.onerror = () => {
-      setError('Failed to read image file');
-    };
-    reader.readAsDataURL(file);
-
-    // Reset input so same file can be selected again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }, []);
-
-  const handleNewChat = useCallback(() => {
-    setMessages([]);
-    setChatCount(0);
-    setError(null);
-    setChatOption(null);
-    setImagePrompt(undefined);
-    setUserPrompt('');
-  }, []);
-
-  const toggleMock = () => {
-    setUseMock(!useMock);
-  };
+  useHotkeys(
+    {
+      'mod+k': (e) => {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      },
+      'mod+n': (e) => {
+        e.preventDefault();
+        handleNewChat();
+      },
+      'mod+\\': (e) => {
+        e.preventDefault();
+        setRailExpanded((r) => !r);
+      },
+      'mod+1': (e) => {
+        e.preventDefault();
+        applyQuickAction('proofread');
+      },
+      'mod+2': (e) => {
+        e.preventDefault();
+        applyQuickAction('summarize');
+      },
+      'mod+3': (e) => {
+        e.preventDefault();
+        applyQuickAction('factcheck');
+      },
+      'mod+4': (e) => {
+        e.preventDefault();
+        applyQuickAction('brainstorm');
+      },
+      'mod+5': (e) => {
+        e.preventDefault();
+        applyQuickAction('image-recognition');
+      },
+    },
+    [handleNewChat, applyQuickAction]
+  );
 
   useEffect(() => {
-    if (messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [messages]);
+    const el = messagesContainerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages.length, isLoading]);
+
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   const placeholderText = useMemo(() => {
     switch (chatOption) {
       case 'summarize':
-        return 'Enter your chat prompt here to summarize';
+        return 'Paste the text to summarize…';
       case 'proofread':
-        return 'Enter your chat prompt here to proofread';
+        return 'Paste the text to proofread…';
+      case 'factcheck':
+        return 'Paste the claim to fact-check…';
+      case 'brainstorm':
+        return 'What should we brainstorm about?';
       case 'image-recognition':
-        return 'Ask questions about the image';
+        return 'Ask a question about the image (optional)';
       default:
-        return 'Enter your chat prompt here';
+        return 'Ask anything, or press ⌘K';
     }
   }, [chatOption]);
 
-  const initialChatState = useMemo(() => messages.length === 0, [messages]);
-  const canSendMessage = userPrompt.length > 0 || imagePrompt?.base64String;
+  const canSendMessage = userPrompt.trim().length > 0 || !!imagePrompt?.base64String;
+  const action = getAction(chatOption);
+  const activeModel =
+    chatOption === 'image-recognition' ? settings.imageModel : settings.textModel;
+
+  const handlePaletteRunPrompt = (id: string) => {
+    setPaletteOpen(false);
+    applyQuickAction(id as Exclude<ChatOption, null>);
+  };
+  const handlePaletteOpenChat = (id: string) => {
+    setPaletteOpen(false);
+    handleSelectChat(id);
+  };
+
+  const toggleTheme = () => {
+    setSettings({ theme: resolvedTheme === 'dark' ? 'light' : 'dark' });
+  };
+
+  const handleClearConversations = () => {
+    if (conversations.length === 0) return;
+    if (confirm(`Delete all ${conversations.length} saved conversations? This cannot be undone.`)) {
+      clearAll();
+      showToast('All conversations cleared');
+    }
+  };
 
   return (
     <div className="App">
-      <div className="header-section">
-        <div className="header-content">
-          <div className="header-actions-left">
-            <ToolTip text="New Chat" position="left">
+      <Rail
+        expanded={railExpanded}
+        onToggle={() => setRailExpanded((r) => !r)}
+        conversations={conversations}
+        activeId={activeId}
+        onSelect={handleSelectChat}
+        onNew={handleNewChat}
+        onSearch={() => setPaletteOpen(true)}
+      />
+
+      <main className="main">
+        <div className="main-header">
+          <div className="main-crumb">
+            {activeConversation ? (
+              <span className="crumb-title">{activeConversation.title}</span>
+            ) : (
+              <span className="crumb-muted">New chat</span>
+            )}
+          </div>
+          <div className="main-actions">
+            {activeConversation && (
+              <>
+                <ToolTip text={activeConversation.pinned ? 'Unpin' : 'Pin'} position="bottom">
+                  <button
+                    className={`icon-btn ${activeConversation.pinned ? 'on' : ''}`}
+                    onClick={() => togglePin(activeConversation.id)}
+                    aria-label={activeConversation.pinned ? 'Unpin chat' : 'Pin chat'}
+                  >
+                    <Star size={16} />
+                  </button>
+                </ToolTip>
+                <ToolTip text="Delete chat" position="bottom">
+                  <button
+                    className="icon-btn"
+                    onClick={() => {
+                      if (confirm('Delete this chat?')) deleteConversation(activeConversation.id);
+                    }}
+                    aria-label="Delete chat"
+                  >
+                    <Trash size={16} />
+                  </button>
+                </ToolTip>
+              </>
+            )}
+            <ToolTip text="Search (⌘K)" position="bottom">
+              <button className="icon-btn" onClick={() => setPaletteOpen(true)} aria-label="Open command palette">
+                <Search size={16} />
+              </button>
+            </ToolTip>
+            <ToolTip text="New chat (⌘N)" position="bottom">
               <button
-                className={`add-icon ${messages.length === 0 ? 'disabled' : ''}`}
+                className={`icon-btn ${messages.length === 0 ? 'disabled' : ''}`}
                 onClick={handleNewChat}
                 disabled={messages.length === 0}
                 aria-label="Start new chat"
@@ -197,158 +426,184 @@ function App() {
                 <Plus />
               </button>
             </ToolTip>
-          </div>
-          <div className="header-actions-right">
+            <ToolTip text={resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'} position="bottom">
+              <button
+                className="icon-btn"
+                onClick={toggleTheme}
+                aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
+            </ToolTip>
+            <ToolTip text="Settings" position="bottom">
+              <button className="icon-btn" onClick={() => setSettingsOpen(true)} aria-label="Open settings">
+                <Gear size={16} />
+              </button>
+            </ToolTip>
             {import.meta.env.VITE_ENV !== 'production' && (
-              <div className="mock-toggle ml-20">
-                <label>
-                  <input type="checkbox" checked={useMock} onChange={toggleMock} />
-                  <span className="ml-10">Use Mock Response</span>
-                </label>
-              </div>
+              <label className="mock-toggle">
+                <input type="checkbox" checked={useMock} onChange={() => setUseMock(!useMock)} />
+                <span>Mock</span>
+              </label>
             )}
           </div>
         </div>
-      </div>
 
-      {error && (
-        <div className="error-banner" role="alert">
-          <span>{error}</span>
-          <button onClick={() => setError(null)} aria-label="Dismiss error">
-            <Close />
-          </button>
-        </div>
-      )}
+        {error && (
+          <div className="error-banner" role="alert">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} aria-label="Dismiss error">
+              <X size={16} />
+            </button>
+          </div>
+        )}
 
-      {messages.length === 0 ? (
-        <Startup />
-      ) : (
-        <div className="messages-section">
-          <div className="messages-container container">
-            {messages.map((message, index) => {
-              if (message.content && message.type === 'text') {
+        {initialChatState ? (
+          <div className="hero">
+            <h1 className="hero-title">What's on your mind?</h1>
+            <p className="hero-sub">
+              Pick a quick action, or just type. Press <kbd>⌘K</kbd> for anything.
+            </p>
+            <div className="quick-actions-row">
+              {QUICK_ACTIONS.map((a) => {
+                const Icon = a.Icon;
                 return (
-                  <div
-                    key={index}
-                    className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(message.content) }}
-                  />
-                );
-              } else if (message.content && message.type === 'image') {
-                return (
-                  <div
-                    key={index}
-                    className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}
+                  <button
+                    key={a.id}
+                    className={`quick-chip ${chatOption === a.id ? 'active' : ''}`}
+                    onClick={() => applyQuickAction(a.id)}
+                    aria-pressed={chatOption === a.id}
                   >
-                    <img src={message.content} className="image-message" alt="Uploaded content" />
-                  </div>
+                    <span className="quick-chip-icon">
+                      <Icon size={13} />
+                    </span>
+                    {a.label}
+                  </button>
                 );
-              }
-              return null;
-            })}
-            {isLoading && (
-              <div className="message assistant-message loading-message">
-                <Spinner /> Thinking...
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        </div>
-      )}
-
-      <div className={`chat-input-section ${initialChatState ? 'startup-position' : 'chat-position'}`}>
-        {isLoading ? (
-          <Spinner />
-        ) : chatCount >= maxChats ? (
-          <div className="chat-status-label">
-            Chat limit reached for this session. Please refresh the page to start a new session.
+              })}
+            </div>
           </div>
         ) : (
-          <>
-            <div className="chat-container container">
-              {imagePrompt?.name && (
-                <div className="image-added-label">
-                  <img src={imagePrompt.base64String} className="added-image-thumbnail" alt="Selected image preview" />
-                  {imagePrompt?.name}
-                  <button
-                    className="close-icon"
-                    onClick={() => setImagePrompt(undefined)}
-                    aria-label="Remove selected image"
-                  >
-                    <Close />
-                  </button>
-                </div>
-              )}
-              <textarea
-                value={userPrompt}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyPress}
-                placeholder={placeholderText}
-                className={`chat-input ${chatOption ? chatOption : ''}`}
-                style={{ overflow: 'hidden' }}
-                aria-label="Chat message input"
-              />
-              <div className="chat-input-actions">
-                <div className="chat-input-actions-container">
-                  <div className="chat-input-actions-left">
-                    {initialChatState && (
-                      <div className="actions-pills-group">
-                        <button
-                          className={`actions-pill summarize ${chatOption === 'summarize' ? 'active' : ''}`}
-                          onClick={() => {
-                            setImagePrompt(undefined);
-                            setChatOption(chatOption === 'summarize' ? null : 'summarize');
-                          }}
-                          aria-pressed={chatOption === 'summarize'}
-                        >
-                          Summarize
-                        </button>
+          <div className="messages-section" ref={messagesContainerRef}>
+            <MessageList messages={messages} isLoading={isLoading} onCopy={copyMessage} />
+          </div>
+        )}
 
-                        <button
-                          className={`actions-pill proofread ${chatOption === 'proofread' ? 'active' : ''}`}
-                          onClick={() => {
-                            setImagePrompt(undefined);
-                            setChatOption(chatOption === 'proofread' ? null : 'proofread');
-                          }}
-                          aria-pressed={chatOption === 'proofread'}
-                        >
-                          Improve Text
+        <div className="composer-wrap">
+          {chatCount >= maxChats ? (
+            <div className="chat-status-label">
+              Chat limit reached for this conversation. Start a new chat to continue.
+            </div>
+          ) : (
+            <>
+              <div className="composer">
+                {(action || imagePrompt) && (
+                  <div className="composer-pills">
+                    {action && (
+                      <div className="action-pill">
+                        <action.Icon size={12} />
+                        {action.label}
+                        <button className="pill-close" onClick={() => setChatOption(null)} aria-label="Clear action">
+                          <X size={12} />
                         </button>
-                        <ToolTip text="Image Recognition" position="right">
-                          <label className="image-upload-icon" aria-label="Upload image for recognition">
-                            <input
-                              ref={fileInputRef}
-                              type="file"
-                              accept="image/*"
-                              onChange={handleImageUpload}
-                              style={{ display: 'none' }}
-                            />
-                            <Image />
-                          </label>
-                        </ToolTip>
+                      </div>
+                    )}
+                    {imagePrompt && (
+                      <div className="image-pill">
+                        <img src={imagePrompt.base64String} className="image-pill-thumb" alt="Selected preview" />
+                        <span className="image-pill-name">{imagePrompt.name}</span>
+                        <button
+                          className="pill-close"
+                          onClick={() => setImagePrompt(undefined)}
+                          aria-label="Remove selected image"
+                        >
+                          <X size={12} />
+                        </button>
                       </div>
                     )}
                   </div>
-
-                  <div className="chat-input-actions-right">
-                    <ToolTip text="Send Chat" position="left">
+                )}
+                <textarea
+                  ref={textareaRef}
+                  rows={1}
+                  value={userPrompt}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyPress}
+                  placeholder={placeholderText}
+                  aria-label="Chat message input"
+                />
+                <div className="composer-row">
+                  <ToolTip text="Attach image" position="top">
+                    <label className="image-upload-btn" aria-label="Upload image">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        style={{ display: 'none' }}
+                      />
+                      <ImageIcon />
+                    </label>
+                  </ToolTip>
+                  <ToolTip text="Change model" position="top">
+                    <button
+                      type="button"
+                      className="model-pill"
+                      onClick={() => setSettingsOpen(true)}
+                      aria-label={`Current model: ${activeModel}. Click to change.`}
+                    >
+                      <span className="model-pill-dot" />
+                      <span className="model-pill-name">{activeModel}</span>
+                    </button>
+                  </ToolTip>
+                  <div className="spacer" />
+                  <span className="composer-hint-inline">↵ send · ⇧↵ newline</span>
+                  {isLoading ? (
+                    <Spinner />
+                  ) : (
+                    <ToolTip text="Send" position="top">
                       <button
-                        className={`send-icon ${!canSendMessage ? 'inactive' : ''}`}
-                        onClick={handleButtonClick}
+                        className="send-btn"
+                        onClick={() => fetchChatResponse()}
                         disabled={!canSendMessage}
                         aria-label="Send message"
                       >
-                        <ArrowUp />
+                        <Send />
                       </button>
                     </ToolTip>
-                  </div>
+                  )}
                 </div>
               </div>
-              {initialChatState && <div className="chat-input-label">Maximum {maxChats} chats per session</div>}
-            </div>
-          </>
-        )}
-      </div>
+              {initialChatState && (
+                <p className="composer-hint">
+                  Your chats are saved locally. Use <kbd>⌘K</kbd> to search, <kbd>⌘N</kbd> for new, <kbd>⌘\</kbd> to
+                  toggle sidebar.
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </main>
+
+      <Palette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onRunPrompt={handlePaletteRunPrompt}
+        onOpenChat={handlePaletteOpenChat}
+        conversations={conversations}
+      />
+
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        settings={settings}
+        onChange={setSettings}
+        onReset={resetSettings}
+        onClearConversations={handleClearConversations}
+        conversationCount={conversations.length}
+      />
+
+      {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }

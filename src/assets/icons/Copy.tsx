@@ -1,6 +1,4 @@
-type Props = { size?: number };
-
-function Plus({ size = 16 }: Props) {
+export default function Copy({ size = 12 }: { size?: number }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -13,10 +11,8 @@ function Plus({ size = 16 }: Props) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     </svg>
   );
 }
-
-export default Plus;

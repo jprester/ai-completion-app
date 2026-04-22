@@ -1,6 +1,4 @@
-type Props = { size?: number };
-
-function Plus({ size = 16 }: Props) {
+export default function Book({ size = 14 }: { size?: number }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -13,10 +11,7 @@ function Plus({ size = 16 }: Props) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
+      <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5zM20 20v2" />
     </svg>
   );
 }
-
-export default Plus;

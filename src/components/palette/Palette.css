@@ -1,0 +1,146 @@
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--palette-backdrop);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  animation: pal-fade 120ms ease;
+}
+
+@keyframes pal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.palette {
+  width: 100%;
+  max-width: 580px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: pal-pop 150ms cubic-bezier(0.3, 0.7, 0.3, 1);
+  color: var(--ink);
+  font-family: inherit;
+}
+
+@keyframes pal-pop {
+  from {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.palette-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--faint);
+}
+
+.palette-input-icon {
+  display: inline-flex;
+  color: var(--muted);
+}
+
+.palette-input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.palette-input input::placeholder {
+  color: var(--muted);
+}
+
+.palette-list {
+  max-height: 52vh;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.palette-group-title {
+  padding: 10px 18px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 18px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink);
+  transition: background 100ms;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: var(--font);
+}
+
+.palette-item.active {
+  background: var(--accent-bg);
+}
+
+.palette-ico {
+  display: inline-flex;
+  color: var(--muted);
+  width: 16px;
+  justify-content: center;
+}
+
+.palette-main {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: 6px;
+}
+
+.palette-empty {
+  padding: 30px 18px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.palette-footer {
+  border-top: 1px solid var(--faint);
+  padding: 10px 18px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--bg-alt);
+}
+
+.palette-footer kbd {
+  margin: 0 2px;
+}

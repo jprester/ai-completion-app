@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>master-chat · prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbfaf7;
+    --bg-alt: #f3f1ec;
+    --surface: #ffffff;
+    --ink: #1f1d1a;
+    --ink-soft: #3a3731;
+    --muted: #8a847b;
+    --faint: #e6e2d9;
+    --accent: #c96442;
+    --accent-soft: #f3c9b8;
+    --accent-bg: #fdf2ec;
+    --yellow: #f5dd5c;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow-sm: 0 1px 2px rgba(31,29,26,0.04);
+    --shadow-md: 0 4px 12px rgba(31,29,26,0.08), 0 1px 2px rgba(31,29,26,0.04);
+    --shadow-lg: 0 16px 48px rgba(31,29,26,0.18), 0 2px 8px rgba(31,29,26,0.08);
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.5; overflow: hidden; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; padding: 0; }
+  input, textarea { font-family: inherit; font-size: inherit; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  kbd { font-family: var(--font-mono); font-size: 11px; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--faint); background: var(--surface); color: var(--muted); box-shadow: 0 1px 0 var(--faint); }
+  /* layout */
+  .app { display: flex; height: 100vh; background: var(--bg); }
+  /* rail */
+  .rail { background: var(--bg-alt); border-right: 1px solid var(--faint); display: flex; flex-direction: column; transition: width .18s cubic-bezier(.3,.7,.3,1); flex-shrink: 0; overflow: hidden; }
+  .rail.collapsed { width: 52px; }
+  .rail.expanded { width: 240px; }
+  .rail-top { padding: 10px 8px; display: flex; align-items: center; gap: 8px; min-height: 48px; }
+  .rail-toggle { width: 36px; height: 36px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; color: var(--muted); transition: background .12s, color .12s; flex-shrink: 0; }
+  .rail-toggle:hover { background: var(--faint); color: var(--ink); }
+  .rail-brand { font-weight: 700; font-size: 15px; letter-spacing: -0.2px; white-space: nowrap; opacity: 0; transition: opacity .15s; }
+  .rail.expanded .rail-brand { opacity: 1; transition-delay: .05s; }
+  .rail-nav { padding: 4px 8px 8px; display: flex; flex-direction: column; gap: 2px; }
+  .rail-btn { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius); color: var(--ink-soft); font-weight: 500; transition: background .12s, color .12s; white-space: nowrap; text-align: left; width: 100%; }
+  .rail-btn:hover { background: var(--faint); color: var(--ink); }
+  .rail-btn.primary { color: var(--accent); }
+  .rail-btn .label { opacity: 0; transition: opacity .15s; flex: 1; }
+  .rail-btn .kbd { opacity: 0; transition: opacity .15s; font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+  .rail.expanded .rail-btn .label, .rail.expanded .rail-btn .kbd { opacity: 1; transition-delay: .05s; }
+  .rail-section { padding: 12px 14px 4px; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; opacity: 0; transition: opacity .15s; white-space: nowrap; }
+  .rail.expanded .rail-section { opacity: 1; transition-delay: .08s; }
+  .rail-list { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 8px 8px; }
+  .rail.collapsed .rail-list, .rail.collapsed .rail-section { display: none; }
+  .convo-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--radius); cursor: pointer; transition: background .12s; white-space: nowrap; overflow: hidden; }
+  .convo-row:hover { background: var(--faint); }
+  .convo-row.active { background: var(--accent-bg); color: var(--accent); }
+  .convo-row .title { flex: 1; overflow: hidden; text-overflow: ellipsis; font-size: 13px; font-weight: 500; }
+  .convo-row .date { font-size: 11px; color: var(--muted); }
+  .rail-footer { padding: 10px 8px; border-top: 1px solid var(--faint); }
+  /* main */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+  .main-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; min-height: 52px; }
+  .main-crumb { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .main-crumb .title { color: var(--ink); font-weight: 600; font-size: 14px; }
+  .main-actions { display: flex; align-items: center; gap: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--faint); background: var(--surface); font-size: 12px; color: var(--ink-soft); font-weight: 500; cursor: pointer; transition: all .12s; white-space: nowrap; }
+  .chip:hover { border-color: var(--muted); background: var(--bg-alt); }
+  .chip.accent { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+  .chip.filled { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .icon-btn { width: 34px; height: 34px; border-radius: var(--radius); display: inline-flex; align-items: center; justify-content: center; color: var(--muted); transition: all .12s; }
+  .icon-btn:hover { background: var(--faint); color: var(--ink); }
+  /* hero empty */
+  .hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; }
+  .hero h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.8px; margin: 0 0 8px; text-align: center; }
+  .hero .sub { color: var(--muted); margin: 0 0 28px; font-size: 15px; }
+  .hero .actions { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+  /* chat */
+  .messages { flex: 1; overflow-y: auto; padding: 8px 24px 20px; }
+  .messages-inner { max-width: 740px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+  .msg { display: flex; flex-direction: column; gap: 6px; }
+  .msg-label { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; color: var(--muted); text-transform: uppercase; }
+  .msg.user .msg-label { color: var(--accent); }
+  .msg-body { font-size: 15px; line-height: 1.65; color: var(--ink); white-space: pre-wrap; word-wrap: break-word; }
+  .msg-body p { margin: 0 0 10px; }
+  .msg-body p:last-child { margin-bottom: 0; }
+  .msg-body ol, .msg-body ul { margin: 8px 0; padding-left: 22px; }
+  .msg-body code { font-family: var(--font-mono); font-size: 13px; background: var(--bg-alt); padding: 1px 5px; border-radius: 4px; }
+  .msg-body strong { font-weight: 600; }
+  .msg-actions { display: flex; gap: 4px; opacity: 0; transition: opacity .15s; margin-top: 2px; }
+  .msg:hover .msg-actions { opacity: 1; }
+  .msg-action { padding: 3px 8px; font-size: 11px; color: var(--muted); border-radius: 5px; transition: all .12s; }
+  .msg-action:hover { background: var(--faint); color: var(--ink); }
+  .msg-image { max-width: 320px; border-radius: var(--radius); border: 1px solid var(--faint); margin-top: 4px; }
+  /* composer */
+  .composer-wrap { padding: 0 24px 20px; }
+  .composer { max-width: 740px; margin: 0 auto; background: var(--surface); border: 1px solid var(--faint); border-radius: var(--radius-lg); padding: 4px; transition: border-color .12s, box-shadow .12s; box-shadow: var(--shadow-sm); }
+  .composer:focus-within { border-color: var(--muted); box-shadow: var(--shadow-md); }
+  .composer textarea { width: 100%; border: none; outline: none; resize: none; padding: 12px 14px 4px; font-size: 15px; line-height: 1.5; background: transparent; color: var(--ink); max-height: 240px; }
+  .composer textarea::placeholder { color: var(--muted); }
+  .composer-row { display: flex; align-items: center; gap: 6px; padding: 4px 8px 6px; }
+  .composer-row .spacer { flex: 1; }
+  .composer-image { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; background: var(--accent-bg); border-radius: 6px; font-size: 12px; color: var(--accent); margin: 0 8px 4px; max-width: calc(100% - 16px); }
+  .composer-image .close { margin-left: 4px; color: var(--muted); cursor: pointer; }
+  .send-btn { width: 32px; height: 32px; border-radius: 8px; background: var(--ink); color: var(--bg); display: flex; align-items: center; justify-content: center; transition: all .12s; }
+  .send-btn:hover { background: var(--accent); }
+  .send-btn:disabled { background: var(--faint); color: var(--muted); cursor: not-allowed; }
+  .composer-hint { text-align: center; font-size: 11px; color: var(--muted); margin-top: 10px; max-width: 740px; margin-left: auto; margin-right: auto; }
+  /* palette */
+  .palette-backdrop { position: fixed; inset: 0; background: rgba(31,29,26,0.28); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; animation: fade .12s ease; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .palette { width: 100%; max-width: 580px; background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden; animation: pop .15s cubic-bezier(.3,.7,.3,1); }
+  @keyframes pop { from { transform: translateY(-8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .palette-input { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--faint); }
+  .palette-input input { flex: 1; border: none; outline: none; font-size: 16px; background: transparent; }
+  .palette-list { max-height: 52vh; overflow-y: auto; padding: 6px 0; }
+  .palette-group-title { padding: 8px 18px 4px; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+  .palette-item { display: flex; align-items: center; gap: 12px; padding: 9px 18px; cursor: pointer; transition: background .1s; }
+  .palette-item:hover, .palette-item.active { background: var(--accent-bg); }
+  .palette-item .ico { color: var(--muted); display: flex; }
+  .palette-item .main { flex: 1; font-size: 14px; }
+  .palette-item .desc { font-size: 12px; color: var(--muted); margin-left: 6px; }
+  .palette-item .kbd { margin-left: auto; }
+  .palette-footer { border-top: 1px solid var(--faint); padding: 10px 18px; display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); background: var(--bg-alt); }
+  .palette-footer kbd { margin: 0 4px; }
+  /* toast */
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: var(--radius); font-size: 13px; box-shadow: var(--shadow-md); z-index: 200; animation: fade .2s; }
+
+  @media (max-width: 720px) {
+    .rail.collapsed { width: 44px; }
+    .rail.expanded { position: absolute; inset: 0 auto 0 0; z-index: 50; width: 260px; box-shadow: var(--shadow-lg); }
+    .main-header { padding: 12px 16px; }
+    .messages { padding: 8px 16px 16px; }
+    .composer-wrap { padding: 0 16px 16px; }
+    .hero h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel">
+// ─── icons ───────────────────────────────────────────────────────
+const Icon = ({ name, size = 16, color }) => {
+  const p = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color || 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  const paths = {
+    menu: <><path d="M3 6h18M3 12h18M3 18h18"/></>,
+    plus: <><path d="M12 5v14M5 12h14"/></>,
+    search: <><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></>,
+    star: <><path d="m12 2 2.9 6.9L22 10l-5.5 4.8L18 22l-6-3.4L6 22l1.5-7.2L2 10l7.1-1.1z"/></>,
+    folder: <><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></>,
+    send: <><path d="M5 12h14M13 5l7 7-7 7"/></>,
+    image: <><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 16-5-5L5 20"/></>,
+    sparkle: <><path d="M12 3v4M12 17v4M4 12H0M24 12h-4M6 6l-2-2M20 20l-2-2M18 6l2-2M6 18l-2 2"/><path d="M12 8a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4z"/></>,
+    pen: <><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></>,
+    clock: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,
+    x: <><path d="M18 6 6 18M6 6l12 12"/></>,
+    check: <><path d="M20 6 9 17l-5-5"/></>,
+    copy: <><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></>,
+    book: <><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5zM20 20v2"/></>,
+    bolt: <><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></>,
+    tag: <><path d="M20 12 12 4H4v8l8 8z"/><circle cx="7.5" cy="7.5" r="1"/></>,
+    more: <><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></>,
+    check2: <><path d="M5 12h14M13 5l7 7-7 7"/></>,
+  };
+  return <svg {...p}>{paths[name]}</svg>;
+};
+
+// ─── data ────────────────────────────────────────────────────────
+const SEED_CONVOS = [
+  { id: 'c1', title: 'Proofread: academic intro', date: 'Today', messages: [
+    { role: 'user', content: 'Proofread this paragraph for me, academic tone:\n\n"The result of our experiment showed that there is a strong correlation between time spent and performance, which we believe is statistically significant."' },
+    { role: 'assistant', content: 'Here is a tightened version:\n\n**Our results show a strong, statistically significant correlation between time spent and performance.**\n\nNotes:\n- Collapsed "showed that there is" into a direct verb.\n- Removed "we believe" — if you ran a significance test, report the finding directly.\n- Consider adding the test and p-value: *"(r = .xx, p < .xx)"*.' },
+  ]},
+  { id: 'c2', title: 'Launch post draft', date: 'Today', messages: [
+    { role: 'user', content: 'Write a short launch post for our writing app beta, warm but not salesy.' },
+    { role: 'assistant', content: 'After a year of quiet tinkering, the beta is open.\n\nIf you write for a living — or just wish you wrote more — give it a try. No credit card, no onboarding maze, no "personalized experience." Just a blank page and a thoughtful reader.\n\nSign up at [link]. We\'ll see you there.' },
+  ]},
+  { id: 'c3', title: 'UX patterns for onboarding', date: 'Yesterday', messages: [
+    { role: 'user', content: 'Three patterns for reducing onboarding drop-off on mobile?' },
+    { role: 'assistant', content: '1. **Progressive disclosure** — defer account creation; let people experience the core product first.\n2. **Value-first** — show what the product does before asking for anything.\n3. **Single-action steps** — one clear goal per screen, no cognitive double-loads.' },
+  ]},
+  { id: 'c4', title: 'Describe this chart', date: 'Apr 18', messages: [] },
+  { id: 'c5', title: 'Fact-check: Roman aqueducts', date: 'Apr 16', messages: [] },
+];
+
+const QUICK_ACTIONS = [
+  { id: 'proofread', label: 'Proofread', prompt: 'Please proofread and fix spelling, grammar and style of the following text:\n\n', ico: 'pen', kbd: '⌘1' },
+  { id: 'summarize', label: 'Summarize', prompt: 'Please summarize the following text:\n\n', ico: 'book', kbd: '⌘2' },
+  { id: 'factcheck', label: 'Fact-check', prompt: 'Please fact-check the following claim and cite whether it is accurate, inaccurate, or requires more context:\n\n', ico: 'check', kbd: '⌘3' },
+  { id: 'brainstorm', label: 'Brainstorm', prompt: 'Brainstorm 10 ideas for:\n\n', ico: 'bolt', kbd: '⌘4' },
+  { id: 'describe-img', label: 'Describe image', prompt: '', ico: 'image', kbd: '⌘5' },
+];
+
+// ─── Markdown-lite rendering (headings, bold, italic, code, lists) ──
+function renderMarkdown(text) {
+  // Extremely small safe renderer — no HTML parsing, just inline transforms.
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const lines = text.split('\n');
+  const out = [];
+  let inList = null;
+  const flushList = () => { if (inList) { out.push(`</${inList}>`); inList = null; } };
+  const inline = (s) => esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  for (const raw of lines) {
+    const olm = raw.match(/^(\d+)\.\s+(.*)/);
+    const ulm = raw.match(/^[-*]\s+(.*)/);
+    if (olm) { if (inList !== 'ol') { flushList(); out.push('<ol>'); inList = 'ol'; } out.push(`<li>${inline(olm[2])}</li>`); }
+    else if (ulm) { if (inList !== 'ul') { flushList(); out.push('<ul>'); inList = 'ul'; } out.push(`<li>${inline(ulm[1])}</li>`); }
+    else if (raw.trim() === '') { flushList(); out.push('<p></p>'); }
+    else { flushList(); out.push(`<p>${inline(raw)}</p>`); }
+  }
+  flushList();
+  return out.join('');
+}
+
+// ─── Rail ─────────────────────────────────────────────────────────
+function Rail({ expanded, setExpanded, convos, activeId, onSelect, onNew, onSearch }) {
+  return (
+    <aside className={`rail ${expanded ? 'expanded' : 'collapsed'}`}>
+      <div className="rail-top">
+        <button className="rail-toggle" onClick={() => setExpanded(!expanded)} aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'} title={expanded ? 'Collapse' : 'Expand'}>
+          <Icon name="menu" />
+        </button>
+        {expanded && <span className="rail-brand">master-chat</span>}
+      </div>
+      <div className="rail-nav">
+        <button className="rail-btn primary" onClick={onNew} title="New chat">
+          <Icon name="plus" size={16} />
+          <span className="label">New chat</span>
+          <span className="kbd">⌘N</span>
+        </button>
+        <button className="rail-btn" onClick={onSearch} title="Search (⌘K)">
+          <Icon name="search" size={16} />
+          <span className="label">Search</span>
+          <span className="kbd">⌘K</span>
+        </button>
+      </div>
+      {expanded && (
+        <>
+          <div className="rail-section">Today</div>
+          <div className="rail-list">
+            {convos.filter(c => c.date === 'Today').map(c => (
+              <div key={c.id} className={`convo-row ${c.id === activeId ? 'active' : ''}`} onClick={() => onSelect(c.id)}>
+                <span className="title">{c.title}</span>
+              </div>
+            ))}
+            {convos.some(c => c.date !== 'Today') && <div className="rail-section" style={{ padding: '10px 6px 4px', opacity: 1 }}>Earlier</div>}
+            {convos.filter(c => c.date !== 'Today').map(c => (
+              <div key={c.id} className={`convo-row ${c.id === activeId ? 'active' : ''}`} onClick={() => onSelect(c.id)}>
+                <span className="title">{c.title}</span>
+                <span className="date">{c.date}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      <div className="rail-footer">
+        <button className="rail-btn" title="Saved prompts">
+          <Icon name="star" size={16} />
+          <span className="label">Pinned prompts</span>
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+// ─── Palette ──────────────────────────────────────────────────────
+function Palette({ onClose, onRun, convos }) {
+  const [q, setQ] = React.useState('');
+  const [idx, setIdx] = React.useState(0);
+  const items = React.useMemo(() => {
+    const lower = q.toLowerCase();
+    const prompts = QUICK_ACTIONS.filter(a => !lower || a.label.toLowerCase().includes(lower)).map(a => ({ type: 'prompt', ...a }));
+    const chats = convos.filter(c => !lower || c.title.toLowerCase().includes(lower)).slice(0, 6).map(c => ({ type: 'chat', id: c.id, label: c.title, ico: 'clock', desc: c.date }));
+    return [...prompts, ...chats];
+  }, [q, convos]);
+  React.useEffect(() => { setIdx(0); }, [q]);
+  const run = (item) => {
+    if (!item) return;
+    if (item.type === 'prompt') onRun({ kind: 'prompt', id: item.id, label: item.label, prompt: item.prompt });
+    else onRun({ kind: 'chat', id: item.id });
+  };
+  const onKey = (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setIdx(i => Math.min(i + 1, items.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setIdx(i => Math.max(i - 1, 0)); }
+    else if (e.key === 'Enter') { e.preventDefault(); run(items[idx]); }
+    else if (e.key === 'Escape') { e.preventDefault(); onClose(); }
+  };
+  return (
+    <div className="palette-backdrop" onClick={onClose}>
+      <div className="palette" onClick={e => e.stopPropagation()}>
+        <div className="palette-input">
+          <Icon name="search" size={18} color="var(--muted)" />
+          <input autoFocus value={q} onChange={e => setQ(e.target.value)} onKeyDown={onKey} placeholder="Search prompts, chats…" />
+          <kbd>esc</kbd>
+        </div>
+        <div className="palette-list">
+          {items.some(i => i.type === 'prompt') && <div className="palette-group-title">Quick actions</div>}
+          {items.filter(i => i.type === 'prompt').map((item, i) => {
+            const absIdx = items.indexOf(item);
+            return (
+              <div key={item.id} className={`palette-item ${absIdx === idx ? 'active' : ''}`} onMouseEnter={() => setIdx(absIdx)} onClick={() => run(item)}>
+                <span className="ico"><Icon name={item.ico} size={15} /></span>
+                <span className="main">{item.label}</span>
+                <kbd className="kbd">{item.kbd}</kbd>
+              </div>
+            );
+          })}
+          {items.some(i => i.type === 'chat') && <div className="palette-group-title">Recent chats</div>}
+          {items.filter(i => i.type === 'chat').map((item, i) => {
+            const absIdx = items.indexOf(item);
+            return (
+              <div key={item.id} className={`palette-item ${absIdx === idx ? 'active' : ''}`} onMouseEnter={() => setIdx(absIdx)} onClick={() => run(item)}>
+                <span className="ico"><Icon name="clock" size={15} /></span>
+                <span className="main">{item.label}</span>
+                <span className="desc">{item.desc}</span>
+              </div>
+            );
+          })}
+          {items.length === 0 && <div style={{ padding: '30px 18px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>No matches.</div>}
+        </div>
+        <div className="palette-footer">
+          <span><kbd>↑↓</kbd> navigate <kbd>↵</kbd> run</span>
+          <span>{items.length} results</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "accent": "#c96442",
+  "railDefault": "expanded"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [convos, setConvos] = React.useState(SEED_CONVOS);
+  const [activeId, setActiveId] = React.useState(null);
+  const [rail, setRail] = React.useState(() => {
+    const saved = localStorage.getItem('mc-rail');
+    return saved ? saved === 'expanded' : TWEAKS.railDefault === 'expanded';
+  });
+  const [input, setInput] = React.useState('');
+  const [action, setAction] = React.useState(null); // { id, label, prompt }
+  const [image, setImage] = React.useState(null); // { name, data }
+  const [paletteOpen, setPaletteOpen] = React.useState(false);
+  const [toast, setToast] = React.useState(null);
+  const [tweaks, setTweaks] = React.useState(TWEAKS);
+  const [editMode, setEditMode] = React.useState(false);
+  const textareaRef = React.useRef(null);
+  const messagesRef = React.useRef(null);
+  const fileRef = React.useRef(null);
+
+  // Edit mode protocol
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      if (e.data?.type === '__activate_edit_mode') setEditMode(true);
+      if (e.data?.type === '__deactivate_edit_mode') setEditMode(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+  React.useEffect(() => { document.documentElement.style.setProperty('--accent', tweaks.accent); }, [tweaks.accent]);
+
+  // persist rail
+  React.useEffect(() => { localStorage.setItem('mc-rail', rail ? 'expanded' : 'collapsed'); }, [rail]);
+
+  // scroll on new messages
+  const active = convos.find(c => c.id === activeId);
+  React.useEffect(() => {
+    if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+  }, [active?.messages?.length]);
+
+  // Keyboard shortcuts
+  React.useEffect(() => {
+    const k = (e) => {
+      const cmd = e.metaKey || e.ctrlKey;
+      if (cmd && e.key === 'k') { e.preventDefault(); setPaletteOpen(o => !o); }
+      else if (cmd && e.key === 'n') { e.preventDefault(); newChat(); }
+      else if (cmd && e.key === '\\') { e.preventDefault(); setRail(r => !r); }
+      else if (cmd && /^[1-5]$/.test(e.key)) {
+        e.preventDefault();
+        const a = QUICK_ACTIONS[parseInt(e.key, 10) - 1];
+        if (a) applyAction(a);
+      } else if (e.key === 'Escape' && paletteOpen) { setPaletteOpen(false); }
+    };
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  }, [paletteOpen]);
+
+  const autoResize = () => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 240) + 'px';
+  };
+  React.useEffect(autoResize, [input]);
+
+  const newChat = () => { setActiveId(null); setInput(''); setAction(null); setImage(null); setTimeout(() => textareaRef.current?.focus(), 0); };
+
+  const selectChat = (id) => { setActiveId(id); setAction(null); setImage(null); };
+
+  const applyAction = (a) => {
+    setAction({ id: a.id, label: a.label, prompt: a.prompt });
+    if (a.id === 'describe-img') { fileRef.current?.click(); return; }
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
+  const onRunPalette = (item) => {
+    setPaletteOpen(false);
+    if (item.kind === 'chat') { selectChat(item.id); }
+    else { applyAction(QUICK_ACTIONS.find(a => a.id === item.id)); }
+  };
+
+  const onImage = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => { setImage({ name: file.name, data: r.result }); setTimeout(() => textareaRef.current?.focus(), 0); };
+    r.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const canSend = input.trim().length > 0 || image;
+
+  const send = () => {
+    if (!canSend) return;
+    const text = (action?.prompt || '') + input.trim();
+    const userMsg = { role: 'user', content: text, image: image?.data };
+    let conv = active;
+    if (!conv) {
+      conv = { id: 'c' + Date.now(), title: autoTitle(input.trim() || action?.label || 'New chat'), date: 'Today', messages: [] };
+      setConvos(cs => [conv, ...cs]);
+      setActiveId(conv.id);
+    }
+    const withUser = { ...conv, messages: [...conv.messages, userMsg] };
+    setConvos(cs => cs.map(c => c.id === conv.id ? withUser : c));
+    setInput(''); setAction(null); setImage(null);
+    // simulated response
+    setTimeout(() => {
+      const reply = simulateReply(text, !!userMsg.image);
+      setConvos(cs => cs.map(c => c.id === conv.id ? { ...c, messages: [...c.messages, userMsg, { role: 'assistant', content: reply }] } : c));
+    }, 700);
+  };
+
+  const autoTitle = (s) => s.length > 36 ? s.slice(0, 34) + '…' : s;
+
+  const simulateReply = (q, hasImg) => {
+    if (hasImg) return 'I can see the image. *(This is a prototype — real OCR/description would run via your API.)*\n\nI notice: placeholder detail 1, placeholder detail 2, placeholder detail 3.';
+    if (/proofread/i.test(q)) return 'Here is a cleaner version:\n\n**[Revised paragraph]**\n\n*(Prototype response — hook your API here.)*';
+    if (/summari[sz]e/i.test(q)) return '**TL;DR:** a one-line summary.\n\n- Bullet 1\n- Bullet 2\n- Bullet 3';
+    if (/fact[- ]?check/i.test(q)) return 'Verdict: **needs context.**\n\nThe claim is partially supported. Caveats to note:\n1. Point one\n2. Point two';
+    return 'Here is a thoughtful response based on what you asked. *(Prototype — wire up `fetchCompletion()` from your `services/api.ts`.)*';
+  };
+
+  const onKeyComposer = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    else if (e.key === 'Backspace' && input === '' && action) { setAction(null); }
+  };
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 1600); };
+
+  const copyMsg = (m) => { navigator.clipboard?.writeText(m.content); showToast('Copied'); };
+
+  const placeholder = action ? `${action.label}: paste or type here…` : 'Ask anything, or press ⌘K';
+
+  return (
+    <div className="app">
+      <Rail
+        expanded={rail}
+        setExpanded={setRail}
+        convos={convos}
+        activeId={activeId}
+        onSelect={selectChat}
+        onNew={newChat}
+        onSearch={() => setPaletteOpen(true)}
+      />
+      <main className="main">
+        <header className="main-header">
+          <div className="main-crumb">
+            {active ? (
+              <>
+                <Icon name="folder" size={13} color="var(--muted)" />
+                <span>writing ›</span>
+                <span className="title">{active.title}</span>
+              </>
+            ) : (
+              <span className="title" style={{ color: 'var(--muted)', fontWeight: 500 }}>New chat</span>
+            )}
+          </div>
+          <div className="main-actions">
+            {active && <button className="chip" title="Star this chat"><Icon name="star" size={12} /></button>}
+            {active && <button className="chip" title="Tag"><Icon name="tag" size={12} /> writing</button>}
+            <button className="icon-btn" onClick={() => setPaletteOpen(true)} title="Command palette (⌘K)"><Icon name="search" size={16} /></button>
+          </div>
+        </header>
+
+        {!active || active.messages.length === 0 ? (
+          <div className="hero">
+            <h1>What's on your mind?</h1>
+            <p className="sub">Pick a quick action, or just type. Press <kbd>⌘K</kbd> for anything.</p>
+            <div className="actions">
+              {QUICK_ACTIONS.map(a => (
+                <button key={a.id} className={`chip ${action?.id === a.id ? 'accent' : ''}`} onClick={() => applyAction(a)}>
+                  <Icon name={a.ico} size={13} /> {a.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="messages" ref={messagesRef}>
+            <div className="messages-inner">
+              {active.messages.map((m, i) => (
+                <div key={i} className={`msg ${m.role}`}>
+                  <div className="msg-label">{m.role === 'user' ? 'You' : 'Assistant'}</div>
+                  {m.image && <img className="msg-image" src={m.image} alt="" />}
+                  <div className="msg-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }} />
+                  {m.role === 'assistant' && (
+                    <div className="msg-actions">
+                      <button className="msg-action" onClick={() => copyMsg(m)}><Icon name="copy" size={11} /> copy</button>
+                      <button className="msg-action"><Icon name="star" size={11} /> save</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="composer-wrap">
+          <div className="composer">
+            {action && (
+              <div className="composer-image" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                <Icon name={QUICK_ACTIONS.find(a => a.id === action.id)?.ico || 'sparkle'} size={12} />
+                {action.label}
+                <span className="close" onClick={() => setAction(null)}><Icon name="x" size={12} /></span>
+              </div>
+            )}
+            {image && (
+              <div className="composer-image">
+                <Icon name="image" size={12} /> {image.name}
+                <span className="close" onClick={() => setImage(null)}><Icon name="x" size={12} /></span>
+              </div>
+            )}
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              placeholder={placeholder}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={onKeyComposer}
+            />
+            <div className="composer-row">
+              <button className="icon-btn" title="Attach image" onClick={() => fileRef.current?.click()}><Icon name="image" size={16} /></button>
+              <input ref={fileRef} type="file" accept="image/*" onChange={onImage} style={{ display: 'none' }} />
+              <div className="spacer" />
+              <span style={{ fontSize: 11, color: 'var(--muted)' }}>↵ send · ⇧↵ newline</span>
+              <button className="send-btn" disabled={!canSend} onClick={send} title="Send">
+                <Icon name="send" size={15} />
+              </button>
+            </div>
+          </div>
+          {!active && <p className="composer-hint">Your chats are saved locally. Use <kbd>⌘K</kbd> to search, <kbd>⌘N</kbd> for new, <kbd>⌘\</kbd> to toggle sidebar.</p>}
+        </div>
+      </main>
+
+      {paletteOpen && <Palette onClose={() => setPaletteOpen(false)} onRun={onRunPalette} convos={convos} />}
+      {toast && <div className="toast">{toast}</div>}
+
+      {editMode && (
+        <div style={{ position: 'fixed', bottom: 20, right: 20, background: 'var(--surface)', border: '1px solid var(--faint)', borderRadius: 10, padding: 14, boxShadow: 'var(--shadow-md)', width: 220, zIndex: 150 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Tweaks</div>
+          <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Accent</div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+            {[['brick','#c96442'],['ink','#1f1d1a'],['olive','#6a7a3a'],['blue','#4a6fa5'],['plum','#7a3a6a']].map(([n,hex]) => (
+              <button key={hex} onClick={() => { setTweaks(t => ({ ...t, accent: hex })); window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { accent: hex } }, '*'); }}
+                style={{ width: 24, height: 24, borderRadius: 6, border: tweaks.accent === hex ? '2px solid var(--ink)' : '1px solid var(--faint)', background: hex, cursor: 'pointer' }} />
+            ))}
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+            <input type="checkbox" checked={tweaks.railDefault === 'expanded'} onChange={e => { const v = e.target.checked ? 'expanded' : 'collapsed'; setTweaks(t => ({ ...t, railDefault: v })); window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { railDefault: v } }, '*'); }} />
+            Sidebar expanded by default
+          </label>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

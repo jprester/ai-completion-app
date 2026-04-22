@@ -1,6 +1,4 @@
-type Props = { size?: number };
-
-function Plus({ size = 16 }: Props) {
+export default function Star({ size = 14 }: { size?: number }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -13,10 +11,7 @@ function Plus({ size = 16 }: Props) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
+      <path d="m12 2 2.9 6.9L22 10l-5.5 4.8L18 22l-6-3.4L6 22l1.5-7.2L2 10l7.1-1.1z" />
     </svg>
   );
 }
-
-export default Plus;
