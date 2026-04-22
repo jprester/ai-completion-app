@@ -102,9 +102,23 @@ export default function SettingsModal({
             <h3>Model</h3>
 
             <div className="settings-field">
-              <label className="settings-label" htmlFor="text-model">
-                Text model
-              </label>
+              <div className="settings-field-header">
+                <label className="settings-label" htmlFor="text-model">
+                  Text model
+                </label>
+                <select
+                  className="provider-select"
+                  value={settings.textProvider}
+                  onChange={(e) => onChange({ textProvider: e.target.value })}
+                  aria-label="Text provider"
+                >
+                  {MODEL_PRESETS.map((p) => (
+                    <option key={p.provider} value={p.provider}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <input
                 id="text-model"
                 type="text"
@@ -116,26 +130,38 @@ export default function SettingsModal({
                 autoComplete="off"
               />
               <div className="settings-presets">
-                {MODEL_PRESETS.flatMap((p) =>
-                  p.text.map((m) => (
-                    <button
-                      key={`${p.provider}-${m}`}
-                      type="button"
-                      className={`preset-chip ${settings.textModel === m ? 'active' : ''}`}
-                      onClick={() => onChange({ textModel: m })}
-                      title={`${p.provider} · ${m}`}
-                    >
-                      {m}
-                    </button>
-                  ))
-                )}
+                {MODEL_PRESETS.find((p) => p.provider === settings.textProvider)?.text.map((m) => (
+                  <button
+                    key={`${settings.textProvider}-${m}`}
+                    type="button"
+                    className={`preset-chip ${settings.textModel === m ? 'active' : ''}`}
+                    onClick={() => onChange({ textModel: m })}
+                    title={`${settings.textProvider} · ${m}`}
+                  >
+                    {m}
+                  </button>
+                ))}
               </div>
             </div>
 
             <div className="settings-field">
-              <label className="settings-label" htmlFor="image-model">
-                Image model
-              </label>
+              <div className="settings-field-header">
+                <label className="settings-label" htmlFor="image-model">
+                  Image model
+                </label>
+                <select
+                  className="provider-select"
+                  value={settings.imageProvider}
+                  onChange={(e) => onChange({ imageProvider: e.target.value })}
+                  aria-label="Image provider"
+                >
+                  {MODEL_PRESETS.map((p) => (
+                    <option key={p.provider} value={p.provider}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <input
                 id="image-model"
                 type="text"
@@ -147,25 +173,23 @@ export default function SettingsModal({
                 autoComplete="off"
               />
               <div className="settings-presets">
-                {MODEL_PRESETS.flatMap((p) =>
-                  p.image.map((m) => (
-                    <button
-                      key={`${p.provider}-img-${m}`}
-                      type="button"
-                      className={`preset-chip ${settings.imageModel === m ? 'active' : ''}`}
-                      onClick={() => onChange({ imageModel: m })}
-                      title={`${p.provider} · ${m}`}
-                    >
-                      {m}
-                    </button>
-                  ))
-                )}
+                {MODEL_PRESETS.find((p) => p.provider === settings.imageProvider)?.image.map((m) => (
+                  <button
+                    key={`${settings.imageProvider}-img-${m}`}
+                    type="button"
+                    className={`preset-chip ${settings.imageModel === m ? 'active' : ''}`}
+                    onClick={() => onChange({ imageModel: m })}
+                    title={`${settings.imageProvider} · ${m}`}
+                  >
+                    {m}
+                  </button>
+                ))}
               </div>
             </div>
 
             <p className="settings-help">
-              Model names are passed directly to your backend. Support depends on how your server
-              routes them.
+              Provider and model are passed directly to your backend. Support depends on how your
+              server routes them.
             </p>
           </section>
 

@@ -116,6 +116,33 @@
   padding: 6px 0 10px;
 }
 
+.settings-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.provider-select {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--faint);
+  background: var(--bg);
+  color: var(--ink);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+
+.provider-select:focus {
+  border-color: var(--accent-soft);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
 .settings-label {
   font-size: 13px;
   font-weight: 500;

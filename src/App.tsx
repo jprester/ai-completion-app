@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { marked } from 'marked';
-import DOMPurify from 'dompurify';
 
 import ToolTip from './components/tooltip/Tooltip';
 import Rail from './components/rail/Rail';
 import Palette from './components/palette/Palette';
 import Spinner from './components/spinner/Spinner';
 import SettingsModal from './components/settings/Settings';
+import MessageList from './components/messages/MessageList';
 
 import Plus from './assets/icons/Plus';
 import ImageIcon from './assets/icons/Image';
@@ -14,7 +13,6 @@ import Search from './assets/icons/Search';
 import Star from './assets/icons/Star';
 import Send from './assets/icons/Send';
 import X from './assets/icons/X';
-import Copy from './assets/icons/Copy';
 import Trash from './assets/icons/Trash';
 import Gear from './assets/icons/Gear';
 import Sun from './assets/icons/Sun';
@@ -50,9 +48,7 @@ function App() {
 
   const { settings, setSettings, resetSettings } = useSettings();
 
-  const [railExpanded, setRailExpanded] = useState<boolean>(
-    () => localStorage.getItem(RAIL_KEY) !== 'collapsed'
-  );
+  const [railExpanded, setRailExpanded] = useState<boolean>(() => localStorage.getItem(RAIL_KEY) !== 'collapsed');
   useEffect(() => {
     localStorage.setItem(RAIL_KEY, railExpanded ? 'expanded' : 'collapsed');
   }, [railExpanded]);
@@ -92,6 +88,7 @@ function App() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const activeConversation = useMemo(
     () => conversations.find((c) => c.id === activeId) || null,
@@ -100,11 +97,6 @@ function App() {
   const messages = activeConversation?.messages ?? [];
   const chatCount = messages.filter((m) => m.role === 'user' && m.type === 'text').length;
   const initialChatState = messages.length === 0;
-
-  const sanitizeHtml = useCallback((content: string): string => {
-    const rawHtml = marked(content) as string;
-    return DOMPurify.sanitize(rawHtml);
-  }, []);
 
   const autoResize = useCallback(() => {
     const ta = textareaRef.current;
@@ -167,19 +159,22 @@ function App() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, []);
 
-  const showToast = (msg: string) => {
+  const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 1600);
-  };
+  }, []);
 
-  const copyMessage = async (content: string) => {
-    try {
-      await navigator.clipboard.writeText(content);
-      showToast('Copied');
-    } catch {
-      showToast('Copy failed');
-    }
-  };
+  const copyMessage = useCallback(
+    async (content: string) => {
+      try {
+        await navigator.clipboard.writeText(content);
+        showToast('Copied');
+      } catch {
+        showToast('Copy failed');
+      }
+    },
+    [showToast]
+  );
 
   const fetchChatResponse = async () => {
     if (!userPrompt && !imagePrompt) return;
@@ -187,6 +182,9 @@ function App() {
 
     setIsLoading(true);
     setError(null);
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
 
     const action = getAction(chatOption);
     const promptText = action ? action.prompt(userPrompt) : userPrompt;
@@ -219,26 +217,29 @@ function App() {
         const mockData = await fetchMockResponse();
         responseMessage = mockData.response;
       } else if (chatOption === 'image-recognition') {
-        const chatResponse = await fetchImageRecognition(historyForApi, settings.imageModel);
+        const chatResponse = await fetchImageRecognition(historyForApi, settings.imageModel, settings.imageProvider, signal);
         responseMessage = chatResponse.response;
       } else {
         const textMessages = historyForApi
           .filter((m) => m.type === 'text')
           .map((m) => ({ role: m.role, content: m.content }));
-        const chatResponse = await fetchCompletion(textMessages, settings.textModel);
+        const chatResponse = await fetchCompletion(textMessages, settings.textModel, settings.textProvider, signal);
         responseMessage = chatResponse.response;
       }
 
       if (responseMessage) {
-        appendMessages(convId, [
-          { role: 'assistant', type: 'text', content: responseMessage },
-        ]);
+        appendMessages(convId, [{ role: 'assistant', type: 'text', content: responseMessage }]);
       }
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        console.log('Request aborted');
+        return;
+      }
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
       console.error('Chat error:', err);
     } finally {
+      abortControllerRef.current = null;
       resetComposer();
       setIsLoading(false);
     }
@@ -300,6 +301,12 @@ function App() {
     const el = messagesContainerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length, isLoading]);
+
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   const placeholderText = useMemo(() => {
     switch (chatOption) {
@@ -379,8 +386,7 @@ function App() {
                   <button
                     className="icon-btn"
                     onClick={() => {
-                      if (confirm('Delete this chat?'))
-                        deleteConversation(activeConversation.id);
+                      if (confirm('Delete this chat?')) deleteConversation(activeConversation.id);
                     }}
                     aria-label="Delete chat"
                   >
@@ -390,11 +396,7 @@ function App() {
               </>
             )}
             <ToolTip text="Search (⌘K)" position="bottom">
-              <button
-                className="icon-btn"
-                onClick={() => setPaletteOpen(true)}
-                aria-label="Open command palette"
-              >
+              <button className="icon-btn" onClick={() => setPaletteOpen(true)} aria-label="Open command palette">
                 <Search size={16} />
               </button>
             </ToolTip>
@@ -408,36 +410,23 @@ function App() {
                 <Plus />
               </button>
             </ToolTip>
-            <ToolTip
-              text={resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
-              position="bottom"
-            >
+            <ToolTip text={resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'} position="bottom">
               <button
                 className="icon-btn"
                 onClick={toggleTheme}
-                aria-label={
-                  resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
-                }
+                aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
               </button>
             </ToolTip>
             <ToolTip text="Settings" position="bottom">
-              <button
-                className="icon-btn"
-                onClick={() => setSettingsOpen(true)}
-                aria-label="Open settings"
-              >
+              <button className="icon-btn" onClick={() => setSettingsOpen(true)} aria-label="Open settings">
                 <Gear size={16} />
               </button>
             </ToolTip>
             {import.meta.env.VITE_ENV !== 'production' && (
               <label className="mock-toggle">
-                <input
-                  type="checkbox"
-                  checked={useMock}
-                  onChange={() => setUseMock(!useMock)}
-                />
+                <input type="checkbox" checked={useMock} onChange={() => setUseMock(!useMock)} />
                 <span>Mock</span>
               </label>
             )}
@@ -480,64 +469,7 @@ function App() {
           </div>
         ) : (
           <div className="messages-section" ref={messagesContainerRef}>
-            <div className="messages-container">
-              {(() => {
-                const grouped: React.ReactNode[] = [];
-                for (let i = 0; i < messages.length; i++) {
-                  const m = messages[i];
-                  if (m.role === 'user') {
-                    const next = messages[i + 1];
-                    const image = next && next.role === 'user' && next.type === 'image' ? next : null;
-                    if (image) i++;
-                    grouped.push(
-                      <div key={i} className="msg user">
-                        <div className="msg-label">You</div>
-                        {image && (
-                          <img src={image.content} className="msg-image" alt="Uploaded" />
-                        )}
-                        {m.type === 'text' && m.content && (
-                          <div
-                            className="msg-body"
-                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(m.content) }}
-                          />
-                        )}
-                        {m.type === 'image' && !image && (
-                          <img src={m.content} className="msg-image" alt="Uploaded" />
-                        )}
-                      </div>
-                    );
-                  } else if (m.role === 'assistant' && m.content) {
-                    grouped.push(
-                      <div key={i} className="msg assistant">
-                        <div className="msg-label">Assistant</div>
-                        <div
-                          className="msg-body"
-                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(m.content) }}
-                        />
-                        <div className="msg-actions">
-                          <button
-                            className="msg-action"
-                            onClick={() => copyMessage(m.content)}
-                            aria-label="Copy message"
-                          >
-                            <Copy size={11} /> copy
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  }
-                }
-                return grouped;
-              })()}
-              {isLoading && (
-                <div className="msg assistant">
-                  <div className="msg-label">Assistant</div>
-                  <div className="msg-loading">
-                    <span className="dot" /> Thinking…
-                  </div>
-                </div>
-              )}
-            </div>
+            <MessageList messages={messages} isLoading={isLoading} onCopy={copyMessage} />
           </div>
         )}
 
@@ -555,22 +487,14 @@ function App() {
                       <div className="action-pill">
                         <action.Icon size={12} />
                         {action.label}
-                        <button
-                          className="pill-close"
-                          onClick={() => setChatOption(null)}
-                          aria-label="Clear action"
-                        >
+                        <button className="pill-close" onClick={() => setChatOption(null)} aria-label="Clear action">
                           <X size={12} />
                         </button>
                       </div>
                     )}
                     {imagePrompt && (
                       <div className="image-pill">
-                        <img
-                          src={imagePrompt.base64String}
-                          className="image-pill-thumb"
-                          alt="Selected preview"
-                        />
+                        <img src={imagePrompt.base64String} className="image-pill-thumb" alt="Selected preview" />
                         <span className="image-pill-name">{imagePrompt.name}</span>
                         <button
                           className="pill-close"
@@ -625,8 +549,8 @@ function App() {
               </div>
               {initialChatState && (
                 <p className="composer-hint">
-                  Your chats are saved locally. Use <kbd>⌘K</kbd> to search, <kbd>⌘N</kbd> for new,{' '}
-                  <kbd>⌘\</kbd> to toggle sidebar.
+                  Your chats are saved locally. Use <kbd>⌘K</kbd> to search, <kbd>⌘N</kbd> for new, <kbd>⌘\</kbd> to
+                  toggle sidebar.
                 </p>
               )}
             </>

@@ -15,7 +15,9 @@ export interface CompletionResponse {
 
 export async function fetchCompletion(
   messages: Array<{ role: string; content: string }>,
-  model: string = 'mistral-tiny'
+  model: string = 'mistral-tiny',
+  provider: string = 'mistral',
+  signal?: AbortSignal
 ): Promise<CompletionResponse> {
   const response = await fetch(`${BASE_URL}/completion`, {
     method: 'POST',
@@ -24,8 +26,10 @@ export async function fetchCompletion(
     },
     body: JSON.stringify({
       model,
+      provider,
       content: messages,
     }),
+    signal,
   });
 
   if (!response.ok) {
@@ -38,7 +42,9 @@ export async function fetchCompletion(
 
 export async function fetchImageRecognition(
   messages: Array<{ role: string; type: string; content: string }>,
-  model: string = 'pixtral-12b-2409'
+  model: string = 'pixtral-12b-2409',
+  provider: string = 'mistral',
+  signal?: AbortSignal
 ): Promise<CompletionResponse> {
   const response = await fetch(`${BASE_URL}/image-recognition`, {
     method: 'POST',
@@ -47,8 +53,10 @@ export async function fetchImageRecognition(
     },
     body: JSON.stringify({
       model,
+      provider,
       messages,
     }),
+    signal,
   });
 
   if (!response.ok) {

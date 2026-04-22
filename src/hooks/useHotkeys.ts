@@ -8,9 +8,17 @@ type HotkeyMap = Record<string, Handler>;
  * Normalized combos: "mod+k", "mod+n", "mod+\\", "mod+1", "escape".
  * `mod` matches either Meta (⌘) or Ctrl.
  */
+function isTypingTarget(el: EventTarget | null): boolean {
+  if (!(el instanceof HTMLElement)) return false;
+  const tag = el.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  return el.isContentEditable;
+}
+
 export function useHotkeys(map: HotkeyMap, deps: DependencyList = []) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return;
       const mod = e.metaKey || e.ctrlKey;
       const key = e.key.toLowerCase();
       const combo = `${mod ? 'mod+' : ''}${key}`;
