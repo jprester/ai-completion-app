@@ -1,0 +1,206 @@
+import { useEffect } from 'react';
+import X from '../../assets/icons/X';
+import Sun from '../../assets/icons/Sun';
+import Moon from '../../assets/icons/Moon';
+import {
+  ACCENT_PRESETS,
+  MODEL_PRESETS,
+  type Settings,
+  type ThemeMode,
+} from '../../hooks/useSettings';
+import './Settings.css';
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  settings: Settings;
+  onChange: (patch: Partial<Settings>) => void;
+  onReset: () => void;
+  onClearConversations: () => void;
+  conversationCount: number;
+};
+
+export default function SettingsModal({
+  open,
+  onClose,
+  settings,
+  onChange,
+  onReset,
+  onClearConversations,
+  conversationCount,
+}: Props) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div className="settings-backdrop" onClick={onClose}>
+      <div
+        className="settings-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-label="Settings"
+      >
+        <div className="settings-header">
+          <h2>Settings</h2>
+          <button className="settings-close" onClick={onClose} aria-label="Close settings">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="settings-body">
+          <section className="settings-section">
+            <h3>Appearance</h3>
+
+            <div className="settings-row">
+              <label className="settings-label">Theme</label>
+              <div className="theme-group" role="radiogroup" aria-label="Theme mode">
+                {(['light', 'dark', 'system'] as ThemeMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className={`theme-option ${settings.theme === mode ? 'active' : ''}`}
+                    onClick={() => onChange({ theme: mode })}
+                    role="radio"
+                    aria-checked={settings.theme === mode}
+                  >
+                    {mode === 'light' && <Sun size={14} />}
+                    {mode === 'dark' && <Moon size={14} />}
+                    {mode === 'system' && <span className="theme-option-dot" />}
+                    <span>{mode[0].toUpperCase() + mode.slice(1)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="settings-row">
+              <label className="settings-label">Accent</label>
+              <div className="accent-group">
+                {ACCENT_PRESETS.map((a) => (
+                  <button
+                    key={a.value}
+                    type="button"
+                    className={`accent-swatch ${settings.accent === a.value ? 'active' : ''}`}
+                    style={{ background: a.value }}
+                    onClick={() => onChange({ accent: a.value })}
+                    aria-label={`Accent: ${a.name}`}
+                    title={a.name}
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="settings-section">
+            <h3>Model</h3>
+
+            <div className="settings-field">
+              <label className="settings-label" htmlFor="text-model">
+                Text model
+              </label>
+              <input
+                id="text-model"
+                type="text"
+                className="settings-input"
+                value={settings.textModel}
+                onChange={(e) => onChange({ textModel: e.target.value })}
+                placeholder="mistral-tiny"
+                spellCheck={false}
+                autoComplete="off"
+              />
+              <div className="settings-presets">
+                {MODEL_PRESETS.flatMap((p) =>
+                  p.text.map((m) => (
+                    <button
+                      key={`${p.provider}-${m}`}
+                      type="button"
+                      className={`preset-chip ${settings.textModel === m ? 'active' : ''}`}
+                      onClick={() => onChange({ textModel: m })}
+                      title={`${p.provider} · ${m}`}
+                    >
+                      {m}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="settings-field">
+              <label className="settings-label" htmlFor="image-model">
+                Image model
+              </label>
+              <input
+                id="image-model"
+                type="text"
+                className="settings-input"
+                value={settings.imageModel}
+                onChange={(e) => onChange({ imageModel: e.target.value })}
+                placeholder="pixtral-12b-2409"
+                spellCheck={false}
+                autoComplete="off"
+              />
+              <div className="settings-presets">
+                {MODEL_PRESETS.flatMap((p) =>
+                  p.image.map((m) => (
+                    <button
+                      key={`${p.provider}-img-${m}`}
+                      type="button"
+                      className={`preset-chip ${settings.imageModel === m ? 'active' : ''}`}
+                      onClick={() => onChange({ imageModel: m })}
+                      title={`${p.provider} · ${m}`}
+                    >
+                      {m}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <p className="settings-help">
+              Model names are passed directly to your backend. Support depends on how your server
+              routes them.
+            </p>
+          </section>
+
+          <section className="settings-section">
+            <h3>Data</h3>
+
+            <div className="settings-row">
+              <div>
+                <div className="settings-label">Conversations</div>
+                <div className="settings-help">
+                  {conversationCount} saved locally in this browser.
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-danger"
+                onClick={onClearConversations}
+                disabled={conversationCount === 0}
+              >
+                Clear all
+              </button>
+            </div>
+
+            <div className="settings-row">
+              <div>
+                <div className="settings-label">Reset preferences</div>
+                <div className="settings-help">Restore theme, accent, and model defaults.</div>
+              </div>
+              <button type="button" className="btn-secondary" onClick={onReset}>
+                Reset
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}

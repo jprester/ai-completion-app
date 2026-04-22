@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>master-chat · wireframes</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; overflow: hidden; }
+  body { font-family: "Kalam", system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="lib/design-canvas.jsx"></script>
+<script type="text/babel" src="lib/sketch.jsx"></script>
+<script type="text/babel" src="lib/d1-minimal.jsx"></script>
+<script type="text/babel" src="lib/d1b-sidebar-variants.jsx"></script>
+<script type="text/babel" src="lib/d2-classic.jsx"></script>
+<script type="text/babel" src="lib/d3-workspace.jsx"></script>
+<script type="text/babel" src="lib/d4-notebook.jsx"></script>
+<script type="text/babel" src="lib/d5-dense.jsx"></script>
+
+<script type="text/babel">
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "accent": "#c96442",
+  "showAnnotations": true
+}/*EDITMODE-END*/;
+
+// ── Tweaks panel ────────────────────────────────────────────────────
+function TweaksPanel({ value, onChange, visible }) {
+  if (!visible) return null;
+  const accents = [
+    { name: 'brick', hex: '#c96442' },
+    { name: 'ink',   hex: '#1a1814' },
+    { name: 'olive', hex: '#6a7a3a' },
+    { name: 'blue',  hex: '#4a6fa5' },
+    { name: 'plum',  hex: '#7a3a6a' },
+  ];
+  return (
+    <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000, background: Sketch.paper,
+      border: `1.5px solid ${Sketch.ink}`, borderRadius: '8px 12px 6px 10px / 10px 6px 12px 8px',
+      padding: 14, width: 220, boxShadow: '3px 3px 0 ' + Sketch.ink, fontFamily: Sketch.font }}>
+      <Hand size={16} weight={700} style={{ display: 'block', marginBottom: 8 }}>Tweaks</Hand>
+      <div style={{ marginBottom: 10 }}>
+        <Hand size={11} color={Sketch.muted} style={{ textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 5 }}>Accent color</Hand>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {accents.map(a => (
+            <button key={a.hex} onClick={() => onChange({ accent: a.hex })}
+              title={a.name}
+              style={{ width: 22, height: 22, borderRadius: 4, border: value.accent === a.hex ? `2px solid ${Sketch.ink}` : '1px solid rgba(0,0,0,0.2)', background: a.hex, cursor: 'pointer', padding: 0 }} />
+          ))}
+        </div>
+      </div>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+        <input type="checkbox" checked={value.showAnnotations} onChange={e => onChange({ showAnnotations: e.target.checked })} />
+        <Hand size={13}>show annotations</Hand>
+      </label>
+      <Hand size={10} color={Sketch.muted} style={{ display: 'block', marginTop: 10 }}>click any wireframe to focus · drag gutter to pan · scroll to zoom</Hand>
+    </div>
+  );
+}
+
+// ── App ─────────────────────────────────────────────────────────────
+function App() {
+  const [tweaks, setTweaks] = React.useState(TWEAKS);
+  const [editMode, setEditMode] = React.useState(false);
+
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      if (e.data?.type === '__activate_edit_mode') setEditMode(true);
+      if (e.data?.type === '__deactivate_edit_mode') setEditMode(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const updateTweaks = (patch) => {
+    const next = { ...tweaks, ...patch };
+    setTweaks(next);
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: patch }, '*');
+  };
+
+  // Dynamic accent swap — rewrite the --sketch-accent on a scoped wrapper
+  React.useEffect(() => {
+    // Mutate the Sketch object's accent for new renders and refresh styles
+    Sketch.accent = tweaks.accent;
+    // Recompute sketch-styles block
+    const s = document.getElementById('sketch-styles');
+    if (s) {
+      s.textContent = s.textContent.replace(/#c96442/g, tweaks.accent);
+    }
+  }, [tweaks.accent]);
+
+  const Annot = ({ children, style }) => tweaks.showAnnotations ? (
+    <div style={{
+      position: 'absolute', fontFamily: Sketch.fontHand, fontSize: 15, color: Sketch.muted,
+      maxWidth: 240, lineHeight: 1.2, ...style
+    }}>{children}</div>
+  ) : null;
+
+  return (
+    <>
+      <DesignCanvas>
+        <DCSection id="intro" title="master-chat · 5 wireframe directions"
+          subtitle="low-fi explorations — click any artboard to focus · ← → navigates · esc exits · ↑↓ jumps sections">
+          <DCArtboard id="legend" label="legend" width={520} height={280}>
+            <div style={{ padding: 26, height: '100%', boxSizing: 'border-box', background: Sketch.paper, fontFamily: Sketch.font }}>
+              <Hand size={24} weight={700} style={{ display: 'block', marginBottom: 6 }}>what you asked for →</Hand>
+              <Hand size={14} color={Sketch.muted} style={{ display: 'block', marginBottom: 14 }}>wireframes, sketchy, explore the design space before committing</Hand>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13 }}>
+                <div><Hand size={12} weight={700}>must-haves</Hand>
+                  <Hand size={12} style={{ display: 'block' }}>· persistent history + search</Hand>
+                  <Hand size={12} style={{ display: 'block' }}>· prompt library / snippets</Hand>
+                  <Hand size={12} style={{ display: 'block' }}>· cmd-k palette</Hand>
+                  <Hand size={12} style={{ display: 'block' }}>· folders, tags, favorites</Hand>
+                </div>
+                <div><Hand size={12} weight={700}>pain points</Hand>
+                  <Hand size={12} style={{ display: 'block' }}>· too many clicks</Hand>
+                  <Hand size={12} style={{ display: 'block' }}>· no keyboard shortcuts</Hand>
+                  <Hand size={12} style={{ display: 'block' }}>· no reusable prompts</Hand>
+                </div>
+              </div>
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ─── Direction 1 ─────────────────────────────────────── */}
+        <DCSection id="d1" title="1 · Minimal + Palette-first"
+          subtitle="almost no chrome · ⌘K is the whole app · typing is the main verb">
+          <DCArtboard id="d1-empty" label="empty state" width={760} height={480}><D1Empty /></DCArtboard>
+          <DCArtboard id="d1-chat" label="active chat" width={760} height={480}><D1Chat /></DCArtboard>
+          <DCArtboard id="d1-palette" label="⌘K palette" width={760} height={480}><D1Palette /></DCArtboard>
+          <DCArtboard id="d1-mobile" label="mobile" width={300} height={560}><D1Mobile /></DCArtboard>
+          {tweaks.showAnnotations && (
+            <div style={{ position: 'relative', width: 220, flexShrink: 0, marginLeft: 10, marginTop: 30 }}>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block' }}>+ fastest to hit top speed</Hand>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block', marginTop: 6 }}>+ fewer clicks by far</Hand>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block', marginTop: 6 }}>− invisible features until you know ⌘K</Hand>
+            </div>
+          )}
+        </DCSection>
+
+        {/* ─── Direction 2 ─────────────────────────────────────── */}
+                <DCSection id="d1b" title="1b · Minimal + expandable sidebar"
+          subtitle="you picked #1 — 4 ways the collapsed history sidebar could behave">
+          <DCArtboard id="d1b-a" label="A · thin icon rail (always visible)" width={760} height={460}><VarA_Rail /></DCArtboard>
+          <DCArtboard id="d1b-b" label="B · hover-edge reveal (default)" width={760} height={460}><VarB_Edge hovering={false} /></DCArtboard>
+          <DCArtboard id="d1b-b2" label="B · edge reveal (on hover)" width={760} height={460}><VarB_Edge hovering={true} /></DCArtboard>
+          <DCArtboard id="d1b-c" label="C · icon rail → push (collapsed)" width={760} height={460}><VarC_Push expanded={false} /></DCArtboard>
+          <DCArtboard id="d1b-c2" label="C · icon rail → push (expanded)" width={760} height={460}><VarC_Push expanded={true} /></DCArtboard>
+          <DCArtboard id="d1b-d" label="D · pure keyboard (⌘\\)" width={760} height={460}><VarD_Ghost /></DCArtboard>
+          {tweaks.showAnnotations && (
+            <div style={{ position: 'relative', width: 240, flexShrink: 0, marginLeft: 10, marginTop: 30 }}>
+              <Hand size={15} weight={700} style={{ display: 'block' }}>my pick: <span style={{ color: Sketch.accent }}>C · push rail</span></Hand>
+              <Hand size={14} color={Sketch.muted} style={{ display: 'block', marginTop: 6 }}>· icons discoverable, expansion honest</Hand>
+              <Hand size={14} color={Sketch.muted} style={{ display: 'block', marginTop: 4 }}>· A is safe but always-visible</Hand>
+              <Hand size={14} color={Sketch.muted} style={{ display: 'block', marginTop: 4 }}>· B is calmest but hides affordance</Hand>
+              <Hand size={14} color={Sketch.muted} style={{ display: 'block', marginTop: 4 }}>· D = purest, keyboard-only</Hand>
+            </div>
+          )}
+        </DCSection>
+
+        <DCSection id="progressive" title="progressive disclosure"
+          subtitle="same app — simple on day 1, grows with you">
+          <DCArtboard id="simple" label="level 1 · just ask" width={760} height={460}><LevelSimple /></DCArtboard>
+          <DCArtboard id="advanced" label="level 2 · opened rail, tags &amp; palette" width={760} height={460}><LevelAdvanced /></DCArtboard>
+          {tweaks.showAnnotations && (
+            <div style={{ position: 'relative', width: 240, flexShrink: 0, marginLeft: 10, marginTop: 30 }}>
+              <Hand size={14} color={Sketch.muted} style={{ display: 'block' }}>day 1: quick-action chips + one input. nothing to learn.</Hand>
+              <Hand size={14} color={Sketch.muted} style={{ display: 'block', marginTop: 8 }}>later: open rail, discover tags, pins, ⌘K.</Hand>
+              <Hand size={14} color={Sketch.muted} style={{ display: 'block', marginTop: 8 }}>nothing new is built — just revealed.</Hand>
+            </div>
+          )}
+        </DCSection>
+
+        <DCSection id="d2" title="2 · Classic sidebar"
+          subtitle="familiar · left rail with folders, pinned prompts, recent history">
+          <DCArtboard id="d2-empty" label="empty / startup" width={820} height={520}><D2Empty /></DCArtboard>
+          <DCArtboard id="d2-chat" label="active chat" width={820} height={520}><D2Chat /></DCArtboard>
+          <DCArtboard id="d2-search" label="history & search" width={820} height={520}><D2Search /></DCArtboard>
+          <DCArtboard id="d2-mobile" label="mobile" width={300} height={560}><D2Mobile /></DCArtboard>
+          {tweaks.showAnnotations && (
+            <div style={{ position: 'relative', width: 220, flexShrink: 0, marginLeft: 10, marginTop: 30 }}>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block' }}>+ zero learning curve</Hand>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block', marginTop: 6 }}>+ great for browsing history</Hand>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block', marginTop: 6 }}>− sidebar steals space on narrow screens</Hand>
+            </div>
+          )}
+        </DCSection>
+
+        {/* ─── Direction 3 ─────────────────────────────────────── */}
+        <DCSection id="d3" title="3 · Workspace / 3-pane"
+          subtitle="pro setup · folders left, chat center, context &amp; pinned snippets right">
+          <DCArtboard id="d3-empty" label="new thread picker" width={820} height={520}><D3Empty /></DCArtboard>
+          <DCArtboard id="d3-work" label="active workspace" width={820} height={520}><D3Workspace /></DCArtboard>
+          {tweaks.showAnnotations && (
+            <div style={{ position: 'relative', width: 220, flexShrink: 0, marginLeft: 10, marginTop: 30 }}>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block' }}>+ pinned snippets are killer for long writing sessions</Hand>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block', marginTop: 6 }}>+ personas visible</Hand>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block', marginTop: 6 }}>− dense; mobile is harder</Hand>
+            </div>
+          )}
+        </DCSection>
+
+        {/* ─── Direction 4 ─────────────────────────────────────── */}
+        <DCSection id="d4" title="4 · Notebook / editorial"
+          subtitle="thread = page of a journal · saved prompts are &lsquo;stamps&rsquo; in the margin">
+          <DCArtboard id="d4-empty" label="blank page" width={760} height={480}><D4Empty /></DCArtboard>
+          <DCArtboard id="d4-note" label="an entry" width={760} height={480}><D4Notebook /></DCArtboard>
+          {tweaks.showAnnotations && (
+            <div style={{ position: 'relative', width: 220, flexShrink: 0, marginLeft: 10, marginTop: 30 }}>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block' }}>+ calm, reading-friendly for prose</Hand>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block', marginTop: 6 }}>+ stamps are tactile &amp; memorable</Hand>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block', marginTop: 6 }}>− less efficient for quick Q&amp;A</Hand>
+            </div>
+          )}
+        </DCSection>
+
+        {/* ─── Direction 5 ─────────────────────────────────────── */}
+        <DCSection id="d5" title="5 · Dense power-tool"
+          subtitle="IDE vibe · tabs, tag bar, inline prompt library with hotkeys, status bar">
+          <DCArtboard id="d5-dense" label="everything on-screen" width={960} height={540}><D5Dense /></DCArtboard>
+          {tweaks.showAnnotations && (
+            <div style={{ position: 'relative', width: 240, flexShrink: 0, marginLeft: 10, marginTop: 30 }}>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block' }}>+ hotkeys for every prompt</Hand>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block', marginTop: 6 }}>+ tabs let you compare threads</Hand>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block', marginTop: 6 }}>+ feels like a real tool, not a toy</Hand>
+              <Hand size={15} color={Sketch.muted} style={{ display: 'block', marginTop: 6 }}>− noisy if you just want to ask one thing</Hand>
+            </div>
+          )}
+        </DCSection>
+
+        <DCSection id="next" title="next steps" subtitle="where to go from here">
+          <DCArtboard id="next" label="suggestions" width={640} height={320}>
+            <div style={{ padding: 24, background: Sketch.paper, height: '100%', boxSizing: 'border-box', fontFamily: Sketch.font }}>
+              <Hand size={20} weight={700} style={{ display: 'block', marginBottom: 8 }}>after picking a direction…</Hand>
+              <Hand size={13} color={Sketch.muted} style={{ display: 'block', marginBottom: 12 }}>
+                pick 1–2 directions (you can mix, e.g. classic sidebar + ⌘K palette). then we:
+              </Hand>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <Hand size={13}>1. hi-fi the chosen direction (real colors, type)</Hand>
+                <Hand size={13}>2. prototype ⌘K palette behavior</Hand>
+                <Hand size={13}>3. spec the data model — folders, tags, prompts, history</Hand>
+                <Hand size={13}>4. wire it into your existing App.tsx</Hand>
+              </div>
+              <Wobble style={{ padding: '8px 10px', marginTop: 14, background: Sketch.accentSoft, display: 'inline-block' }}>
+                <Hand size={12} weight={700}>tell me which you like &amp; I&apos;ll push further</Hand>
+              </Wobble>
+            </div>
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+
+      <TweaksPanel value={tweaks} onChange={updateTweaks} visible={editMode} />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
