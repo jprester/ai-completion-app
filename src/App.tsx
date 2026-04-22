@@ -17,6 +17,8 @@ import Trash from './assets/icons/Trash';
 import Gear from './assets/icons/Gear';
 import Sun from './assets/icons/Sun';
 import Moon from './assets/icons/Moon';
+import Menu from './assets/icons/Menu';
+import More from './assets/icons/More';
 
 import { fetchCompletion, fetchImageRecognition, fetchMockResponse } from './services/api';
 import { useConversations, autoTitle } from './hooks/useConversations';
@@ -53,13 +55,17 @@ function App() {
 
   const [railExpanded, setRailExpanded] = useState<boolean>(() => {
     try {
+      if (window.innerWidth <= 720) return false;
       const stored = localStorage.getItem(RAIL_KEY);
       if (stored !== null) return stored !== 'collapsed';
-      return window.innerWidth > 720;
+      return true;
     } catch {
       return false;
     }
   });
+
+  const isMobileViewport = () =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 720px)').matches;
   useEffect(() => {
     try {
       localStorage.setItem(RAIL_KEY, railExpanded ? 'expanded' : 'collapsed');
@@ -99,6 +105,7 @@ function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [overflowOpen, setOverflowOpen] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -138,6 +145,7 @@ function App() {
     setError(null);
     resetComposer();
     focusComposer();
+    if (isMobileViewport()) setRailExpanded(false);
   }, [resetComposer, setActiveId]);
 
   const handleSelectChat = useCallback(
@@ -145,6 +153,7 @@ function App() {
       setActiveId(id);
       setError(null);
       resetComposer();
+      if (isMobileViewport()) setRailExpanded(false);
     },
     [resetComposer, setActiveId]
   );
@@ -376,12 +385,29 @@ function App() {
         activeId={activeId}
         onSelect={handleSelectChat}
         onNew={handleNewChat}
-        onSearch={() => setPaletteOpen(true)}
+        onSearch={() => {
+          setPaletteOpen(true);
+          if (isMobileViewport()) setRailExpanded(false);
+        }}
       />
+      {railExpanded && (
+        <div
+          className="rail-backdrop"
+          onClick={() => setRailExpanded(false)}
+          aria-hidden="true"
+        />
+      )}
 
       <main className="main">
         <div className="main-header">
           <div className="main-crumb">
+            <button
+              className="mobile-menu-btn"
+              onClick={() => setRailExpanded(true)}
+              aria-label="Open sidebar"
+            >
+              <Menu size={18} />
+            </button>
             {activeConversation ? (
               <span className="crumb-title">{activeConversation.title}</span>
             ) : (
@@ -389,65 +415,157 @@ function App() {
             )}
           </div>
           <div className="main-actions">
-            {activeConversation && (
-              <>
-                <ToolTip text={activeConversation.pinned ? 'Unpin' : 'Pin'} position="bottom">
-                  <button
-                    className={`icon-btn ${activeConversation.pinned ? 'on' : ''}`}
-                    onClick={() => togglePin(activeConversation.id)}
-                    aria-label={activeConversation.pinned ? 'Unpin chat' : 'Pin chat'}
-                  >
-                    <Star size={16} />
-                  </button>
-                </ToolTip>
-                <ToolTip text="Delete chat" position="bottom">
-                  <button
-                    className="icon-btn"
-                    onClick={() => {
-                      if (confirm('Delete this chat?')) deleteConversation(activeConversation.id);
-                    }}
-                    aria-label="Delete chat"
-                  >
-                    <Trash size={16} />
-                  </button>
-                </ToolTip>
-              </>
-            )}
-            <ToolTip text="Search (⌘K)" position="bottom">
-              <button className="icon-btn" onClick={() => setPaletteOpen(true)} aria-label="Open command palette">
-                <Search size={16} />
-              </button>
-            </ToolTip>
-            <ToolTip text="New chat (⌘N)" position="bottom">
+            <div className="main-actions-inline">
+              {activeConversation && (
+                <>
+                  <ToolTip text={activeConversation.pinned ? 'Unpin' : 'Pin'} position="bottom">
+                    <button
+                      className={`icon-btn ${activeConversation.pinned ? 'on' : ''}`}
+                      onClick={() => togglePin(activeConversation.id)}
+                      aria-label={activeConversation.pinned ? 'Unpin chat' : 'Pin chat'}
+                    >
+                      <Star size={16} />
+                    </button>
+                  </ToolTip>
+                  <ToolTip text="Delete chat" position="bottom">
+                    <button
+                      className="icon-btn"
+                      onClick={() => {
+                        if (confirm('Delete this chat?')) deleteConversation(activeConversation.id);
+                      }}
+                      aria-label="Delete chat"
+                    >
+                      <Trash size={16} />
+                    </button>
+                  </ToolTip>
+                </>
+              )}
+              <ToolTip text="Search (⌘K)" position="bottom">
+                <button className="icon-btn" onClick={() => setPaletteOpen(true)} aria-label="Open command palette">
+                  <Search size={16} />
+                </button>
+              </ToolTip>
+              <ToolTip text="New chat (⌘N)" position="bottom">
+                <button
+                  className={`icon-btn ${messages.length === 0 ? 'disabled' : ''}`}
+                  onClick={handleNewChat}
+                  disabled={messages.length === 0}
+                  aria-label="Start new chat"
+                >
+                  <Plus />
+                </button>
+              </ToolTip>
+              <ToolTip text={resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'} position="bottom">
+                <button
+                  className="icon-btn"
+                  onClick={toggleTheme}
+                  aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                </button>
+              </ToolTip>
+              <ToolTip text="Settings" position="bottom">
+                <button className="icon-btn" onClick={() => setSettingsOpen(true)} aria-label="Open settings">
+                  <Gear size={16} />
+                </button>
+              </ToolTip>
+              {import.meta.env.VITE_ENV !== 'production' && (
+                <label className="mock-toggle">
+                  <input type="checkbox" checked={useMock} onChange={() => setUseMock(!useMock)} />
+                  <span>Mock</span>
+                </label>
+              )}
+            </div>
+            <div className="more-wrap">
               <button
-                className={`icon-btn ${messages.length === 0 ? 'disabled' : ''}`}
-                onClick={handleNewChat}
-                disabled={messages.length === 0}
-                aria-label="Start new chat"
+                className="icon-btn more-btn"
+                onClick={() => setOverflowOpen((o) => !o)}
+                aria-label="More actions"
+                aria-expanded={overflowOpen}
+                aria-haspopup="menu"
               >
-                <Plus />
+                <More size={16} />
               </button>
-            </ToolTip>
-            <ToolTip text={resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'} position="bottom">
-              <button
-                className="icon-btn"
-                onClick={toggleTheme}
-                aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-              </button>
-            </ToolTip>
-            <ToolTip text="Settings" position="bottom">
-              <button className="icon-btn" onClick={() => setSettingsOpen(true)} aria-label="Open settings">
-                <Gear size={16} />
-              </button>
-            </ToolTip>
-            {import.meta.env.VITE_ENV !== 'production' && (
-              <label className="mock-toggle">
-                <input type="checkbox" checked={useMock} onChange={() => setUseMock(!useMock)} />
-                <span>Mock</span>
-              </label>
-            )}
+              {overflowOpen && (
+                <>
+                  <div className="overflow-backdrop" onClick={() => setOverflowOpen(false)} aria-hidden="true" />
+                  <div className="overflow-menu" role="menu">
+                    {activeConversation && (
+                      <>
+                        <button
+                          className="overflow-item"
+                          role="menuitem"
+                          onClick={() => {
+                            togglePin(activeConversation.id);
+                            setOverflowOpen(false);
+                          }}
+                        >
+                          <Star size={14} />
+                          {activeConversation.pinned ? 'Unpin chat' : 'Pin chat'}
+                        </button>
+                        <button
+                          className="overflow-item"
+                          role="menuitem"
+                          onClick={() => {
+                            setOverflowOpen(false);
+                            if (confirm('Delete this chat?')) deleteConversation(activeConversation.id);
+                          }}
+                        >
+                          <Trash size={14} />
+                          Delete chat
+                        </button>
+                        <div className="overflow-divider" />
+                      </>
+                    )}
+                    <button
+                      className="overflow-item"
+                      role="menuitem"
+                      onClick={() => {
+                        setPaletteOpen(true);
+                        setOverflowOpen(false);
+                      }}
+                    >
+                      <Search size={14} />
+                      Search
+                    </button>
+                    <button
+                      className="overflow-item"
+                      role="menuitem"
+                      disabled={messages.length === 0}
+                      onClick={() => {
+                        handleNewChat();
+                        setOverflowOpen(false);
+                      }}
+                    >
+                      <Plus size={14} />
+                      New chat
+                    </button>
+                    <button
+                      className="overflow-item"
+                      role="menuitem"
+                      onClick={() => {
+                        toggleTheme();
+                        setOverflowOpen(false);
+                      }}
+                    >
+                      {resolvedTheme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+                      {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
+                    </button>
+                    <button
+                      className="overflow-item"
+                      role="menuitem"
+                      onClick={() => {
+                        setSettingsOpen(true);
+                        setOverflowOpen(false);
+                      }}
+                    >
+                      <Gear size={14} />
+                      Settings
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 

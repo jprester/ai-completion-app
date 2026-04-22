@@ -204,13 +204,14 @@
 
 @media (max-width: 720px) {
   .rail.collapsed {
-    width: 44px;
+    width: 0;
+    border-right: none;
   }
   .rail.expanded {
     position: fixed;
     inset: 0 auto 0 0;
     z-index: 90;
-    width: 260px;
+    width: 280px;
     box-shadow: var(--shadow-lg);
   }
 }
