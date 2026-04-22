@@ -58,7 +58,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
     id: 'image-recognition',
     label: 'Describe image',
     kbd: '⌘5',
-    Icon: Image as FC<IconProps>,
+    Icon: Image,
     prompt: (t) => t || 'Please provide a description of the image',
   },
 ];

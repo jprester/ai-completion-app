@@ -43,11 +43,12 @@ Create `.env.local` with:
 ```
 VITE_DOMAIN=http://localhost:8000
 VITE_API_BASE_URL=/api
-VITE_MAX_CHATS=20      # optional, per-conversation message cap
-VITE_ENV=development   # hides the Mock toggle when set to "production"
+VITE_ACCESS_TOKEN=your-secret-token   # must match ACCESS_TOKEN on the backend
+VITE_MAX_CHATS=20                     # optional, per-conversation message cap
+VITE_ENV=development                  # hides the Mock toggle when set to "production"
 ```
 
-The app calls `POST {VITE_DOMAIN}{VITE_API_BASE_URL}/completion` and `/image-recognition`. See `src/services/api.ts` for the request shape.
+The app calls `POST /completion`, `POST /image-recognition`, and `GET /providers/openrouter/models` on the backend. Every request includes `Authorization: Bearer <VITE_ACCESS_TOKEN>`. See `src/services/api.ts` for the full request shapes.
 
 ## Project layout
 

@@ -12,7 +12,8 @@ function loadCache(): Cached | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Cached;
     if (!parsed?.data || !Array.isArray(parsed.data)) return null;
-    if (Date.now() - parsed.fetched_at * 1000 > CACHE_TTL_MS) return null;
+    // fetched_at is Unix seconds (from backend); convert to ms for comparison
+    if (Date.now() - parsed.fetched_at * 1_000 > CACHE_TTL_MS) return null;
     return parsed;
   } catch {
     return null;

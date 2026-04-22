@@ -93,6 +93,11 @@
   font-size: 14px;
   color: var(--ink);
   transition: background 100ms;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: var(--font);
 }
 
 .palette-item.active {

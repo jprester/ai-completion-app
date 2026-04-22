@@ -135,6 +135,7 @@ export default function SettingsModal({
         className="settings-modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
         aria-label="Settings"
       >
         <div className="settings-header">

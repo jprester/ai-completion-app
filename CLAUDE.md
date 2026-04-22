@@ -21,7 +21,7 @@ Always run `npm run build` and `npm run lint` before declaring a task done. Both
   - `useConversations` → `mc-conversations`, `mc-active`
   - `useSettings` → `mc-settings`
   - Rail expanded/collapsed → `mc-rail` (stored inline in App.tsx)
-- **`src/services/api.ts`** — thin fetch wrappers. `fetchCompletion` and `fetchImageRecognition` take a model string; pass `settings.textModel` / `settings.imageModel` from the UI.
+- **`src/services/api.ts`** — thin fetch wrappers. `fetchCompletion(messages, model, provider, signal)` and `fetchImageRecognition(messages, model, provider, signal)` — pass `settings.textModel`/`settings.textProvider` and `settings.imageModel`/`settings.imageProvider` from the UI. All requests include `Authorization: Bearer` from `VITE_ACCESS_TOKEN`.
 - **`src/quickActions.ts`** — quick-action registry (id, label, icon, prompt wrapper). Add new actions here and they appear in the hero row, palette, and `⌘1`–`⌘5` hotkeys.
 
 ## Design system
@@ -46,17 +46,22 @@ All `localStorage` writes are best-effort (wrapped in try/catch for quota errors
 
 ## Backend contract
 
+All requests include `Authorization: Bearer <VITE_ACCESS_TOKEN>`.
+
 ```
 POST {VITE_DOMAIN}{VITE_API_BASE_URL}/completion
-  body: { model: string, content: [{ role, content }] }
+  body: { model: string, provider: string, content: [{ role, content }] }
   returns: { response: string }
 
 POST {VITE_DOMAIN}{VITE_API_BASE_URL}/image-recognition
-  body: { model: string, messages: [{ role, type, content }] }
+  body: { model: string, provider: string, messages: [{ role, type, content }] }
   returns: { response: string }
+
+GET {VITE_DOMAIN}{VITE_API_BASE_URL}/providers/openrouter/models
+  returns: { data: [{ id, name, context_length, pricing, is_free, supports_images }], fetched_at: number }
 ```
 
-Model names from `useSettings` are passed through unchanged. The server decides which provider to route to. Preset lists in `MODEL_PRESETS` (`useSettings.ts`) are UI-only — adding a preset does not require a backend change, but the server must recognize the model name.
+`model` and `provider` from `useSettings` are passed through unchanged. Preset lists in `MODEL_PRESETS` (`useSettings.ts`) are UI-only — adding a preset does not require a backend change, but the server must recognise the model+provider pair.
 
 ## Things not to do
 

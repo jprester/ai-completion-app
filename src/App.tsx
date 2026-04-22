@@ -32,7 +32,10 @@ const RAIL_KEY = 'mc-rail';
 const MAX_CHATS_DEFAULT = 20;
 
 function App() {
-  const maxChats = Number(import.meta.env.VITE_MAX_CHATS || MAX_CHATS_DEFAULT);
+  const maxChats = (() => {
+    const n = parseInt(import.meta.env.VITE_MAX_CHATS, 10);
+    return isFinite(n) && n > 0 ? n : MAX_CHATS_DEFAULT;
+  })();
 
   const {
     conversations,
@@ -256,6 +259,7 @@ function App() {
     } else if (event.key === 'Backspace' && userPrompt === '' && chatOption) {
       event.preventDefault();
       setChatOption(null);
+      setImagePrompt(undefined);
     }
   };
 

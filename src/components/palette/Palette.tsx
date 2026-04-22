@@ -95,6 +95,7 @@ export default function Palette({ open, onClose, onRunPrompt, onOpenChat, conver
         className="palette"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
         aria-label="Command palette"
       >
         <div className="palette-input">
@@ -117,8 +118,9 @@ export default function Palette({ open, onClose, onRunPrompt, onOpenChat, conver
             const absIdx = items.indexOf(item);
             const Icon = item.Icon;
             return (
-              <div
+              <button
                 key={`p-${item.id}`}
+                type="button"
                 className={`palette-item ${absIdx === idx ? 'active' : ''}`}
                 onMouseEnter={() => setIdx(absIdx)}
                 onClick={() => run(item)}
@@ -128,15 +130,16 @@ export default function Palette({ open, onClose, onRunPrompt, onOpenChat, conver
                 </span>
                 <span className="palette-main">{item.label}</span>
                 <kbd>{item.kbd}</kbd>
-              </div>
+              </button>
             );
           })}
           {chats.length > 0 && <div className="palette-group-title">Recent chats</div>}
           {chats.map((item) => {
             const absIdx = items.indexOf(item);
             return (
-              <div
+              <button
                 key={`c-${item.id}`}
+                type="button"
                 className={`palette-item ${absIdx === idx ? 'active' : ''}`}
                 onMouseEnter={() => setIdx(absIdx)}
                 onClick={() => run(item)}
@@ -146,7 +149,7 @@ export default function Palette({ open, onClose, onRunPrompt, onOpenChat, conver
                 </span>
                 <span className="palette-main">{item.label}</span>
                 <span className="palette-desc">{item.desc}</span>
-              </div>
+              </button>
             );
           })}
           {items.length === 0 && <div className="palette-empty">No matches.</div>}
