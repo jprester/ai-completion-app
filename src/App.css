@@ -664,4 +664,13 @@
   .composer-wrap {
     padding: 0 16px max(16px, env(safe-area-inset-bottom));
   }
+  .composer-hint-inline {
+    display: none;
+  }
+  .composer-hint {
+    display: none;
+  }
+  .model-pill {
+    max-width: 140px;
+  }
 }
