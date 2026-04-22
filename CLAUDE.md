@@ -35,7 +35,7 @@ Reference design at `docs/2026-update/design/` — prototype is pixel-accurate, 
 ## Conventions
 
 - Markdown rendering path: `marked(content)` → `DOMPurify.sanitize(...)` → `dangerouslySetInnerHTML`. Do not bypass sanitization.
-- User text + image messages are stored as two separate `Message` objects (`type: 'text'` and `type: 'image'`) but rendered as one grouped bubble in `App.tsx` — preserve this grouping if you touch the message render loop.
+- User text + image messages are stored as two separate `Message` objects (`type: 'text'` and `type: 'image'`) but rendered as one grouped bubble in `src/components/messages/MessageList.tsx` — preserve this grouping if you touch the message render loop.
 - Global shortcuts go through `useHotkeys`. Use `mod+` for ⌘/Ctrl. Don't add raw `window.addEventListener('keydown', ...)` in components.
 - Icons are individual SVG React components under `src/assets/icons/`. Lucide-style, 1.8px stroke, accept a `size` prop. Add new icons here rather than inlining SVG.
 - Prefer editing over creating files. Components are colocated with their CSS (`Foo.tsx` + `Foo.css`).

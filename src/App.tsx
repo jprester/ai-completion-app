@@ -51,9 +51,19 @@ function App() {
 
   const { settings, setSettings, resetSettings } = useSettings();
 
-  const [railExpanded, setRailExpanded] = useState<boolean>(() => localStorage.getItem(RAIL_KEY) !== 'collapsed');
+  const [railExpanded, setRailExpanded] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(RAIL_KEY) !== 'collapsed';
+    } catch {
+      return true;
+    }
+  });
   useEffect(() => {
-    localStorage.setItem(RAIL_KEY, railExpanded ? 'expanded' : 'collapsed');
+    try {
+      localStorage.setItem(RAIL_KEY, railExpanded ? 'expanded' : 'collapsed');
+    } catch {
+      // ignore quota / privacy-mode errors
+    }
   }, [railExpanded]);
 
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
@@ -181,7 +191,7 @@ function App() {
 
   const fetchChatResponse = async () => {
     if (isLoading) return;
-    if (!userPrompt && !imagePrompt) return;
+    if (!userPrompt.trim() && !imagePrompt) return;
     if (chatCount >= maxChats) return;
 
     setIsLoading(true);

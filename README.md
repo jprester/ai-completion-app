@@ -43,12 +43,14 @@ Create `.env.local` with:
 ```
 VITE_DOMAIN=http://localhost:8000
 VITE_API_BASE_URL=/api
-VITE_ACCESS_TOKEN=your-secret-token   # must match ACCESS_TOKEN on the backend
+VITE_ACCESS_TOKEN=shared-token        # must match ACCESS_TOKEN on the backend; NOT a real secret (bundled into client)
 VITE_MAX_CHATS=20                     # optional, per-conversation message cap
 VITE_ENV=development                  # hides the Mock toggle when set to "production"
 ```
 
 The app calls `POST /completion`, `POST /image-recognition`, and `GET /providers/openrouter/models` on the backend. Every request includes `Authorization: Bearer <VITE_ACCESS_TOKEN>`. See `src/services/api.ts` for the full request shapes.
+
+> **Note on `VITE_ACCESS_TOKEN`:** all `VITE_*` env vars are baked into the production bundle and readable by anyone who loads the site. Treat this token as a shared/rotatable lightweight gate against anonymous drive-by traffic on the backend URL, not as a real secret. Rotate it by updating both `ACCESS_TOKEN` (Railway) and `VITE_ACCESS_TOKEN` (Netlify) together.
 
 ## Project layout
 

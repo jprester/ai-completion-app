@@ -58,7 +58,11 @@ export function autoTitle(s: string): string {
 export function useConversations() {
   const [conversations, setConversations] = useState<Conversation[]>(() => load());
   const [activeId, setActiveIdState] = useState<string | null>(() => {
-    return localStorage.getItem(KEY_ACTIVE);
+    try {
+      return localStorage.getItem(KEY_ACTIVE);
+    } catch {
+      return null;
+    }
   });
 
   useEffect(() => {
@@ -67,8 +71,12 @@ export function useConversations() {
   }, [conversations]);
 
   useEffect(() => {
-    if (activeId) localStorage.setItem(KEY_ACTIVE, activeId);
-    else localStorage.removeItem(KEY_ACTIVE);
+    try {
+      if (activeId) localStorage.setItem(KEY_ACTIVE, activeId);
+      else localStorage.removeItem(KEY_ACTIVE);
+    } catch {
+      // ignore quota / privacy-mode errors
+    }
   }, [activeId]);
 
   const setActiveId = useCallback((id: string | null) => setActiveIdState(id), []);

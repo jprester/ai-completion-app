@@ -1,6 +1,6 @@
 type Props = { size?: number };
 
-function Plus({ size = 24 }: Props) {
+function Plus({ size = 16 }: Props) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

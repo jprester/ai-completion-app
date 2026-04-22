@@ -83,7 +83,7 @@ function Rail({ expanded, onToggle, conversations, activeId, onSelect, onNew, on
                 title={c.title}
               >
                 {c.pinned && (
-                  <span className="convo-pin" aria-label="pinned">
+                  <span className="convo-pin" role="img" aria-label="Pinned">
                     <Star size={12} />
                   </span>
                 )}

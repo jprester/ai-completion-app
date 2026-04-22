@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import X from '../../assets/icons/X';
 import Sun from '../../assets/icons/Sun';
 import Moon from '../../assets/icons/Moon';
@@ -8,6 +8,7 @@ import {
   type Settings,
   type ThemeMode,
 } from '../../hooks/useSettings';
+import { useHotkeys } from '../../hooks/useHotkeys';
 import { useOpenRouterModels } from '../../hooks/useOpenRouterModels';
 import type { OpenRouterModel } from '../../services/api';
 import './Settings.css';
@@ -113,14 +114,14 @@ export default function SettingsModal({
   onClearConversations,
   conversationCount,
 }: Props) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  useHotkeys(
+    {
+      escape: () => {
+        if (open) onClose();
+      },
+    },
+    [open, onClose]
+  );
 
   const needsOpenRouter =
     open && (settings.textProvider === OPENROUTER || settings.imageProvider === OPENROUTER);

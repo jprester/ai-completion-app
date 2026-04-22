@@ -19,8 +19,10 @@ export function useHotkeys(map: HotkeyMap, deps: DependencyList = []) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
-      if (!mod && isTypingTarget(e.target)) return;
       const key = e.key.toLowerCase();
+      // Escape always fires (universal "dismiss" affordance); bare keys are
+      // otherwise suppressed while typing in inputs/textareas.
+      if (!mod && key !== 'escape' && isTypingTarget(e.target)) return;
       const combo = `${mod ? 'mod+' : ''}${key}`;
       const handler = map[combo] || map[key];
       if (handler) handler(e);
