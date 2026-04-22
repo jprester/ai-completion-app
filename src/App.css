@@ -455,6 +455,43 @@
   font-family: var(--font-mono);
 }
 
+.model-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 240px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+
+.model-pill:hover {
+  background: var(--bg-alt);
+  color: var(--ink);
+  border-color: var(--faint);
+}
+
+.model-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.model-pill-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .image-upload-btn {
   width: 32px;
   height: 32px;

@@ -177,14 +177,15 @@ function App() {
   );
 
   const fetchChatResponse = async () => {
+    if (isLoading) return;
     if (!userPrompt && !imagePrompt) return;
     if (chatCount >= maxChats) return;
 
     setIsLoading(true);
     setError(null);
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const signal = controller.signal;
 
     const action = getAction(chatOption);
     const promptText = action ? action.prompt(userPrompt) : userPrompt;
@@ -231,17 +232,16 @@ function App() {
         appendMessages(convId, [{ role: 'assistant', type: 'text', content: responseMessage }]);
       }
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        console.log('Request aborted');
-        return;
-      }
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
       console.error('Chat error:', err);
     } finally {
-      abortControllerRef.current = null;
-      resetComposer();
-      setIsLoading(false);
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+        resetComposer();
+        setIsLoading(false);
+      }
     }
   };
 
@@ -327,6 +327,8 @@ function App() {
 
   const canSendMessage = userPrompt.trim().length > 0 || !!imagePrompt?.base64String;
   const action = getAction(chatOption);
+  const activeModel =
+    chatOption === 'image-recognition' ? settings.imageModel : settings.textModel;
 
   const handlePaletteRunPrompt = (id: string) => {
     setPaletteOpen(false);
@@ -528,6 +530,17 @@ function App() {
                       />
                       <ImageIcon />
                     </label>
+                  </ToolTip>
+                  <ToolTip text="Change model" position="top">
+                    <button
+                      type="button"
+                      className="model-pill"
+                      onClick={() => setSettingsOpen(true)}
+                      aria-label={`Current model: ${activeModel}. Click to change.`}
+                    >
+                      <span className="model-pill-dot" />
+                      <span className="model-pill-name">{activeModel}</span>
+                    </button>
                   </ToolTip>
                   <div className="spacer" />
                   <span className="composer-hint-inline">↵ send · ⇧↵ newline</span>

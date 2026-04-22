@@ -310,3 +310,121 @@
 .btn-secondary:hover {
   background: var(--faint);
 }
+
+.or-picker {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.or-picker-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.or-picker-search {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--faint);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+
+.or-picker-search:focus {
+  border-color: var(--accent-soft);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
+.or-picker-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.or-picker-toggle input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.or-picker-list {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--faint);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.or-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--faint);
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms, color 120ms;
+}
+
+.or-item:last-child {
+  border-bottom: none;
+}
+
+.or-item:hover {
+  background: var(--bg-alt);
+  color: var(--ink);
+}
+
+.or-item.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.or-item-id {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.or-item-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg));
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.or-item-ctx {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.or-picker-status {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}

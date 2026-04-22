@@ -18,8 +18,8 @@ function isTypingTarget(el: EventTarget | null): boolean {
 export function useHotkeys(map: HotkeyMap, deps: DependencyList = []) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target)) return;
       const mod = e.metaKey || e.ctrlKey;
+      if (!mod && isTypingTarget(e.target)) return;
       const key = e.key.toLowerCase();
       const combo = `${mod ? 'mod+' : ''}${key}`;
       const handler = map[combo] || map[key];

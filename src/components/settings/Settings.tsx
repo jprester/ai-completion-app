@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import X from '../../assets/icons/X';
 import Sun from '../../assets/icons/Sun';
 import Moon from '../../assets/icons/Moon';
@@ -8,7 +8,91 @@ import {
   type Settings,
   type ThemeMode,
 } from '../../hooks/useSettings';
+import { useOpenRouterModels } from '../../hooks/useOpenRouterModels';
+import type { OpenRouterModel } from '../../services/api';
 import './Settings.css';
+
+const OPENROUTER = 'openrouter';
+
+function OpenRouterPicker({
+  mode,
+  models,
+  loading,
+  error,
+  selected,
+  onSelect,
+}: {
+  mode: 'text' | 'image';
+  models: OpenRouterModel[];
+  loading: boolean;
+  error: string | null;
+  selected: string;
+  onSelect: (id: string) => void;
+}) {
+  const [q, setQ] = useState('');
+  const [freeOnly, setFreeOnly] = useState(false);
+
+  const filtered = useMemo(() => {
+    let list = models;
+    if (mode === 'image') list = list.filter((m) => m.supports_images);
+    if (freeOnly) list = list.filter((m) => m.is_free);
+    const lower = q.trim().toLowerCase();
+    if (lower) {
+      list = list.filter(
+        (m) => m.id.toLowerCase().includes(lower) || m.name.toLowerCase().includes(lower)
+      );
+    }
+    return list.slice(0, 60);
+  }, [models, mode, freeOnly, q]);
+
+  return (
+    <div className="or-picker">
+      <div className="or-picker-toolbar">
+        <input
+          type="text"
+          className="or-picker-search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search OpenRouter models…"
+          spellCheck={false}
+          autoComplete="off"
+        />
+        <label className="or-picker-toggle">
+          <input
+            type="checkbox"
+            checked={freeOnly}
+            onChange={(e) => setFreeOnly(e.target.checked)}
+          />
+          Free only
+        </label>
+      </div>
+      <div className="or-picker-list">
+        {loading && models.length === 0 && (
+          <div className="or-picker-status">Loading models…</div>
+        )}
+        {error && models.length === 0 && <div className="or-picker-status">{error}</div>}
+        {!loading && !error && filtered.length === 0 && (
+          <div className="or-picker-status">No matches</div>
+        )}
+        {filtered.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            className={`or-item ${selected === m.id ? 'active' : ''}`}
+            onClick={() => onSelect(m.id)}
+            title={m.name}
+          >
+            <span className="or-item-id">{m.id}</span>
+            {m.is_free && <span className="or-item-badge">Free</span>}
+            {m.context_length ? (
+              <span className="or-item-ctx">{Math.round(m.context_length / 1000)}k</span>
+            ) : null}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 type Props = {
   open: boolean;
@@ -37,6 +121,11 @@ export default function SettingsModal({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+
+  const needsOpenRouter =
+    open && (settings.textProvider === OPENROUTER || settings.imageProvider === OPENROUTER);
+  const { models: orModels, loading: orLoading, error: orError } =
+    useOpenRouterModels(needsOpenRouter);
 
   if (!open) return null;
 
@@ -129,19 +218,32 @@ export default function SettingsModal({
                 spellCheck={false}
                 autoComplete="off"
               />
-              <div className="settings-presets">
-                {MODEL_PRESETS.find((p) => p.provider === settings.textProvider)?.text.map((m) => (
-                  <button
-                    key={`${settings.textProvider}-${m}`}
-                    type="button"
-                    className={`preset-chip ${settings.textModel === m ? 'active' : ''}`}
-                    onClick={() => onChange({ textModel: m })}
-                    title={`${settings.textProvider} · ${m}`}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
+              {settings.textProvider === OPENROUTER ? (
+                <OpenRouterPicker
+                  mode="text"
+                  models={orModels}
+                  loading={orLoading}
+                  error={orError}
+                  selected={settings.textModel}
+                  onSelect={(m) => onChange({ textModel: m })}
+                />
+              ) : (
+                <div className="settings-presets">
+                  {MODEL_PRESETS.find((p) => p.provider === settings.textProvider)?.text.map(
+                    (m) => (
+                      <button
+                        key={`${settings.textProvider}-${m}`}
+                        type="button"
+                        className={`preset-chip ${settings.textModel === m ? 'active' : ''}`}
+                        onClick={() => onChange({ textModel: m })}
+                        title={`${settings.textProvider} · ${m}`}
+                      >
+                        {m}
+                      </button>
+                    )
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="settings-field">
@@ -172,19 +274,32 @@ export default function SettingsModal({
                 spellCheck={false}
                 autoComplete="off"
               />
-              <div className="settings-presets">
-                {MODEL_PRESETS.find((p) => p.provider === settings.imageProvider)?.image.map((m) => (
-                  <button
-                    key={`${settings.imageProvider}-img-${m}`}
-                    type="button"
-                    className={`preset-chip ${settings.imageModel === m ? 'active' : ''}`}
-                    onClick={() => onChange({ imageModel: m })}
-                    title={`${settings.imageProvider} · ${m}`}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
+              {settings.imageProvider === OPENROUTER ? (
+                <OpenRouterPicker
+                  mode="image"
+                  models={orModels}
+                  loading={orLoading}
+                  error={orError}
+                  selected={settings.imageModel}
+                  onSelect={(m) => onChange({ imageModel: m })}
+                />
+              ) : (
+                <div className="settings-presets">
+                  {MODEL_PRESETS.find((p) => p.provider === settings.imageProvider)?.image.map(
+                    (m) => (
+                      <button
+                        key={`${settings.imageProvider}-img-${m}`}
+                        type="button"
+                        className={`preset-chip ${settings.imageModel === m ? 'active' : ''}`}
+                        onClick={() => onChange({ imageModel: m })}
+                        title={`${settings.imageProvider} · ${m}`}
+                      >
+                        {m}
+                      </button>
+                    )
+                  )}
+                </div>
+              )}
             </div>
 
             <p className="settings-help">
