@@ -53,9 +53,11 @@ function App() {
 
   const [railExpanded, setRailExpanded] = useState<boolean>(() => {
     try {
-      return localStorage.getItem(RAIL_KEY) !== 'collapsed';
+      const stored = localStorage.getItem(RAIL_KEY);
+      if (stored !== null) return stored !== 'collapsed';
+      return window.innerWidth > 720;
     } catch {
-      return true;
+      return false;
     }
   });
   useEffect(() => {

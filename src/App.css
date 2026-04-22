@@ -1,6 +1,7 @@
 .App {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   background: var(--bg);
 }
 
@@ -661,6 +662,6 @@
     padding: 8px 16px 16px;
   }
   .composer-wrap {
-    padding: 0 16px 16px;
+    padding: 0 16px max(16px, env(safe-area-inset-bottom));
   }
 }
