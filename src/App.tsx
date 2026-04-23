@@ -346,7 +346,7 @@ function App() {
       case 'image-recognition':
         return 'Ask a question about the image (optional)';
       default:
-        return 'Ask anything, or press ⌘K';
+        return 'Ask anything…';
     }
   }, [chatOption]);
 
@@ -582,7 +582,8 @@ function App() {
           <div className="hero">
             <h1 className="hero-title">What's on your mind?</h1>
             <p className="hero-sub">
-              Pick a quick action, or just type. Press <kbd>⌘K</kbd> for anything.
+              Pick a quick action, or just type.
+              <span className="kbd-hint"> Press <kbd>⌘K</kbd> for anything.</span>
             </p>
             <div className="quick-actions-row">
               {QUICK_ACTIONS.map((a) => {

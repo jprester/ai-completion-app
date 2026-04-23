@@ -64,6 +64,12 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
 html,
 body {
   margin: 0;
@@ -72,7 +78,12 @@ body {
   background: var(--bg);
   color: var(--ink);
   overflow: hidden;
+  overscroll-behavior: none;
   transition: background-color 150ms, color 150ms;
+}
+
+body {
+  overflow-x: hidden;
 }
 
 button {
@@ -82,6 +93,7 @@ button {
   background: none;
   color: inherit;
   padding: 0;
+  touch-action: manipulation;
 }
 
 input,

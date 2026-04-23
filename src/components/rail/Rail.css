@@ -211,7 +211,23 @@
     position: fixed;
     inset: 0 auto 0 0;
     z-index: 90;
-    width: 280px;
+    width: 85vw;
+    max-width: 320px;
     box-shadow: var(--shadow-lg);
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .rail-btn-kbd {
+    display: none;
+  }
+  .rail-btn {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  .convo-row {
+    padding: 10px 12px;
+  }
+  .convo-title {
+    font-size: 14px;
   }
 }
