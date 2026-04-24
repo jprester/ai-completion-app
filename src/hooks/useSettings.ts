@@ -21,6 +21,12 @@ export const ACCENT_PRESETS: Array<{ name: string; value: string }> = [
 
 export const MODEL_PRESETS: Array<{ provider: string; label: string; text: string[]; image: string[] }> = [
   {
+    provider: 'deepseek',
+    label: 'DeepSeek',
+    text: ['deepseek-v4-flash', 'deepseek-v4-pro'],
+    image: [],
+  },
+  {
     provider: 'mistral',
     label: 'Mistral',
     text: ['mistral-tiny', 'mistral-small-latest', 'mistral-medium-latest', 'mistral-large-latest'],
@@ -36,12 +42,13 @@ export const MODEL_PRESETS: Array<{ provider: string; label: string; text: strin
     provider: 'openrouter',
     label: 'OpenRouter',
     text: ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o', 'openai/gpt-4o-mini'],
-    image: ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o'],
+    image: ['google/gemini-2.5-flash', 'anthropic/claude-3.5-sonnet', 'openai/gpt-4o'],
   },
 ];
 
 function inferProvider(model: string): string {
   const lower = model.toLowerCase();
+  if (lower.startsWith('deepseek-')) return 'deepseek';
   if (lower.startsWith('mistral-') || lower.startsWith('pixtral-')) return 'mistral';
   if (lower.startsWith('claude-')) return 'anthropic';
   return 'openrouter';
@@ -52,10 +59,10 @@ const KEY = 'mc-settings';
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   accent: '#c96442',
-  textProvider: 'mistral',
-  textModel: 'mistral-tiny',
-  imageProvider: 'mistral',
-  imageModel: 'pixtral-12b-2409',
+  textProvider: 'deepseek',
+  textModel: 'deepseek-v4-flash',
+  imageProvider: 'openrouter',
+  imageModel: 'google/gemini-2.5-flash',
 };
 
 function load(): Settings {
